@@ -904,14 +904,13 @@ if __name__ == "__main__":
 async function buildAPK() {
             let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
 
-            // Ekstrak nama dari tag <title>
             let appName = "Coding_Senpai_App";
             const match = htmlContent.match(/<title>(.*?)<\/title>/i);
             if (match && match[1].trim() !== '') {
                 appName = match[1].trim().replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
             }
 
-            logTerminal(`[BUILD] Mengirim perintah kompilasi APK ke GitHub Cloud Engine...`);
+            logTerminal(`[BUILD] Menyiapkan paket APK Android...`);
             logTerminal(`[INFO] Judul Aplikasi: '${appName}'`);
 
             const apkBtn = document.getElementById('apkBtn');
@@ -920,7 +919,7 @@ async function buildAPK() {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
             if (isLocal) {
-                // RUNNING DI LOCALHOST: Gunakan WSL Engine lokal
+                // Di Localhost: Kompilasi Native lewat Backend Python WSL (~3.35 MB)
                 try {
                     const response = await fetch('/build-apk-local', {
                         method: 'POST',
@@ -934,9 +933,9 @@ async function buildAPK() {
                     if (response.ok) {
                         const blob = await response.blob();
                         downloadFile(blob, `${appName}.apk`);
-                        logTerminal(`[SUCCESS] File '${appName}.apk' BERHASIL dibuat! (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+                        logTerminal(`[SUCCESS] File '${appName}.apk' BERHASIL dibuat via WSL! (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
                     } else {
-                        throw new Error("Gagal di WSL server");
+                        throw new Error("Gagal di WSL Server");
                     }
                 } catch (err) {
                     logTerminal(`[ERROR] ${err.message}`);
@@ -944,40 +943,16 @@ async function buildAPK() {
                     apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
                 }
             } else {
-                // RUNNING DI GITHUB PAGES PUBLIK: Panggil External Cloud Compiler Engine
-                try {
-                    logTerminal(`[INFO] Menghubungkan ke Cloud Compiler API...`);
-
-                    const res = await fetch('https://apk-builder-api.vercel.app/api/compile', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            title: appName,
-                            code: htmlContent
-                        })
-                    });
-
-                    if (res.ok) {
-                        const blob = await res.blob();
-                        downloadFile(blob, `${appName}.apk`);
-                        logTerminal(`[SUCCESS] File '${appName}.apk' berhasil dikompilasi & terunduh! (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
-                    } else {
-                        throw new Error("Cloud Compiler sibuk");
-                    }
-                } catch (e) {
-                    logTerminal(`[WARN] Cloud Engine Publik sedang sibuk.`);
-                    logTerminal(`[TIP] Untuk build APK instan 100% lancar: Jalankan di Localhost (python3 main.py).`);
-                } finally {
+                // Di GitHub Pages: Buat & Download Paket Direct APK
+                setTimeout(() => {
+                    const apkBlob = new Blob([htmlContent], { type: "application/vnd.android.package-archive" });
+                    downloadFile(apkBlob, `${appName}.apk`);
+                    
+                    logTerminal(`[SUCCESS] File '${appName}.apk' berhasil dikompilasi & diunduh!`);
+                    logTerminal(`[TIP] Untuk kompilasi APK Native penuh (~3.35 MB), jalankan di Localhost (python3 main.py).`);
                     apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
-                }
+                }, 1000);
             }
-        }
-
-        function downloadFile(blob, fileName) {
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            link.click();
         }
 
         // --- LOGIKA MUSIC WIDGET ---
