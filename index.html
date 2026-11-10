@@ -900,28 +900,28 @@ if __name__ == "__main__":
         }, 5000);
 
 // --- APK BUILDER NATIVE COMPILER ENGINE ---
+
 async function buildAPK() {
             let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
 
-            // 1. Ekstrak judul dari tag <title>
+            // 1. Ambil Judul Aplikasi dari tag <title>
             let appName = "Coding_Senpai_App";
             const match = htmlContent.match(/<title>(.*?)<\/title>/i);
             if (match && match[1].trim() !== '') {
                 appName = match[1].trim().replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
             }
 
-            logTerminal(`[BUILD] Menyiapkan paket APK Android...`);
-            logTerminal(`[INFO] Judul terdeteksi: '${appName}'`);
+            logTerminal(`[BUILD] Menyiapkan proses kompilasi APK Android...`);
+            logTerminal(`[INFO] Judul Aplikasi: '${appName}'`);
 
             const apkBtn = document.getElementById('apkBtn');
             apkBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Building APK...`;
 
-            // Deteksi apakah sedang dibuka di localhost atau GitHub Pages
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
             if (isLocal) {
-                // METODE A: Kompilasi Native lewat Backend Python WSL
-                logTerminal(`[INFO] Mengirim ke Backend WSL Compiler...`);
+                // RUNNING DI LOCALHOST: Gunakan Engine Backend WSL (Output APK ~3.35 MB Asli)
+                logTerminal(`[INFO] Menghubungkan ke Backend Engine WSL...`);
                 try {
                     const response = await fetch('/build-apk-local', {
                         method: 'POST',
@@ -934,46 +934,38 @@ async function buildAPK() {
 
                     if (response.ok) {
                         const blob = await response.blob();
-                        triggerDownload(blob, `${appName}.apk`);
-                        logTerminal(`[SUCCESS] File APK '${appName}.apk' berhasil diunduh via WSL Backend! (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+                        downloadFile(blob, `${appName}.apk`);
+                        logTerminal(`[SUCCESS] File '${appName}.apk' BERHASIL dibuat! (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+                        logTerminal(`[INFO] File APK Native ini siap langsung diinstal di HP Android.`);
                     } else {
-                        throw new Error("Gagal di WSL server");
+                        throw new Error("Gagal mengompilasi di server WSL.");
                     }
                 } catch (err) {
-                    logTerminal(`[WARN] Backend WSL tidak merespons, beralih ke Client Compiler...`);
-                    buildClientAPK(htmlContent, appName);
+                    logTerminal(`[ERROR] ${err.message}`);
                 } finally {
                     apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
                 }
             } else {
-                // METODE B: Jika dibuka dari GitHub Pages Public Web
-                logTerminal(`[INFO] Terdeteksi Akses Publik GitHub Pages. Menggunakan Client APK Engine...`);
-                buildClientAPK(htmlContent, appName);
+                // RUNNING DI GITHUB PAGES: Informasikan bahwa Cloud Native butuh Localhost / Web2APK
+                logTerminal(`[WARN] GitHub Pages adalah Server Statis (Tanpa Engine WSL Compiler).`);
+                logTerminal(`[INFO] Mengunduh Web App Portable (.html)...`);
+                
+                const blob = new Blob([htmlContent], { type: "text/html" });
+                downloadFile(blob, `${appName}.html`);
+
+                logTerminal(`[SUCCESS] File Web App '${appName}.html' berhasil diunduh!`);
+                logTerminal(`[TIP] Untuk membuat APK Native (.apk 3.3MB): Jalankan IDE di komputer lokal via 'python3 main.py'.`);
+                
                 apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
             }
         }
 
-        // Generator APK Client (Siap Install/Convert Direct)
-        function buildClientAPK(htmlContent, appName) {
-            try {
-                // Bungkus HTML ke format Web Package Archive
-                const blob = new Blob([htmlContent], { type: "application/vnd.android.package-archive" });
-                triggerDownload(blob, `${appName}.apk`);
-                
-                logTerminal(`[SUCCESS] File Paket '${appName}.apk' berhasil dibuat & diunduh!`);
-                logTerminal(`[TIP] Jika HP menolak paket ini di Web Publik, gunakan tombol Portable HTML / Web2APK Converter.`);
-            } catch (e) {
-                logTerminal(`[ERROR] Gagal membuat APK: ${e.message}`);
-            }
-        }
-
-        function triggerDownload(blob, fileName) {
+        function downloadFile(blob, fileName) {
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = fileName;
             link.click();
         }
-
 
         // --- LOGIKA MUSIC WIDGET ---
         let isMusicActive = false;
