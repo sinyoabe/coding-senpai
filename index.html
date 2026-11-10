@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CODING SENPAI - Web IDE & WSL</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Monaco Editor CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f111a;
+            --panel-bg: #161925;
+            --editor-bg: #1a1d2d;
+            --accent: #5d66ef;
+            --accent-hover: #4b53d6;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #232738;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Header Navigation */
+        .top-navbar {
+            height: 48px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 13px;
+            position: relative;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+            z-index: 2;
+        }
+
+        .user-badge {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .blinking-love {
+            color: #ec4899;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            animation: blinker 1.2s infinite;
+        }
+
+        /* Quotes Header */
+        .header-quotes-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-style: italic;
+            color: #cbd5e1;
+            background: rgba(15, 17, 26, 0.6);
+            padding: 4px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 450px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            z-index: 1;
+        }
+
+        .quote-text {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .quote-text.fade-out {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        .blinking-text {
+            color: #f59e0b;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            animation: blinker 1.2s infinite;
+        }
+
+        @keyframes blinker {
+            0% { opacity: 1.0; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1.0; }
+        }
+
+        .btn {
+            background: #232738;
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: #2d3248;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        .font-selector {
+            background: #232738;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            outline: none;
+        }
+
+        .right-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .badge-green {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Workspace View */
+        .workspace {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 48px);
+            position: relative;
+        }
+
+        .left-pane {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            background: var(--editor-bg);
+        }
+
+        /* Code Editor Tabs Bar */
+        .tab-bar {
+            height: 38px;
+            background-color: var(--panel-bg);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 6px 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: #fff;
+            background: var(--editor-bg);
+            border-color: var(--border);
+            border-bottom-color: var(--editor-bg);
+        }
+
+        .tab-controls-inline {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-dots {
+            display: flex;
+            gap: 5px;
+            margin-left: 4px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+        }
+
+        #monaco-editor {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Terminal Bar Bottom */
+        .terminal-panel {
+            height: 150px;
+            background: #0d0f17;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .terminal-header {
+            height: 28px;
+            background: #131622;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 10px;
+            font-size: 12px;
+            color: #a7f3d0;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .prompt-line {
+            color: #38bdf8;
+        }
+
+        /* Right Preview Pane */
+        .right-pane {
+            width: 50%;
+            background: #0d0f17;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-toolbar {
+            height: 40px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        .device-switcher {
+            display: flex;
+            background: #0f111a;
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            gap: 2px;
+        }
+
+        .device-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .device-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .preview-viewport {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Mengunci scrollbar internal jika meluap */
+            padding: 20px;
+            background: radial-gradient(circle at center, #1a1c2e 0%, #0d0e15 100%);
+            position: relative;
+        }
+
+        /* --- PERBAIKAN ANIMASI GLOBE STABIL & TERISOLASI --- */
+        .bg-globe-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 700px;
+            height: 700px;
+            margin-top: -350px;
+            margin-left: -350px;
+            pointer-events: none;
+            opacity: 0.05;
+            z-index: 1;
+            contain: strict;
+        }
+
+        .bg-globe-svg {
+            width: 100%;
+            height: 100%;
+            transform-origin: center center;
+            will-change: transform;
+            animation: pureGlobeSpin 60s linear infinite;
+        }
+
+        @keyframes pureGlobeSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mockup Devices Styling */
+        .frame-container {
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            z-index: 5;
+        }
+
+        /* iPhone Frame */
+        .frame-iphone {
+            width: 375px;
+            height: 680px;
+            background: #000;
+            border-radius: 40px;
+            border: 10px solid #2d303e;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .frame-iphone::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 22px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 10;
+        }
+
+        /* Tablet Frame */
+        .frame-tablet {
+            width: 600px;
+            height: 520px;
+            background: #111;
+            border-radius: 20px;
+            border: 12px solid #2b2d3c;
+        }
+
+        /* Fullscreen Frame */
+        .frame-fullscreen {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            border: none;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
+
+        /* --- STYLES WIDGET MUSIK PRESISI --- */
+        .music-widget-wrapper {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+        }
+
+        .music-pill-container {
+            background: rgba(22, 25, 37, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 30px;
+            padding: 4px 6px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .music-pill-container.active {
+            border-color: rgba(93, 102, 239, 0.5);
+            box-shadow: 0 0 20px rgba(93, 102, 239, 0.25);
+        }
+
+        .music-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background 0.3s ease;
+        }
+
+        .music-pill-container.active .music-toggle-btn {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .switch-icon {
+            font-size: 12px;
+        }
+
+        .music-input-expand {
+            max-width: 0;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .music-pill-container.active .music-input-expand {
+            max-width: 250px;
+            opacity: 1;
+            margin-left: 8px;
+            margin-right: 4px;
+        }
+
+        .yt-input {
+            background: rgba(15, 17, 26, 0.8);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 11px;
+            width: 190px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .yt-input::placeholder {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        .yt-play-btn {
+            background: var(--danger);
+            border: none;
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .yt-play-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #youtubePlayerFrame {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <div class="top-navbar">
+        <div class="logo-area">
+            <span class="user-badge">SINYOABE</span>
+            <span class="blinking-love"><i class="fa-solid fa-heart"></i> Made with Love</span>
+        </div>
+
+        <div class="header-quotes-center">
+            <span class="quote-text" id="quoteDisplay">&quot; Nangis Boleh namun Jangan Menyerah! &quot; - W. Kusuma -</span>
+        </div>
+
+        <div class="right-tools">
+            <span class="blinking-text">export to &raquo;</span>
+            <span style="background: #d97706; color: #fff;" class="badge-green" onclick="exportPortable()"><i class="fa-solid fa-box"></i> Portable</span>
+            <span style="background: #059669; color: #fff;" class="badge-green" id="apkBtn" onclick="buildAPK()"><i class="fa-solid fa-android"></i> .APK Builder</span>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+        
+        <!-- Left Code Editor Pane -->
+        <div class="left-pane">
+            <div class="tab-bar">
+                <div class="tab active" onclick="switchTab('html')">
+                    <i class="fa-brands fa-html5" style="color: #e34f26;"></i> index.html
+                </div>
+                <div class="tab" onclick="switchTab('python')">
+                    <i class="fa-brands fa-python" style="color: #3776ab;"></i> main.py
+                </div>
+
+                <div class="tab-controls-inline">
+                    <span style="font-size: 11px; color: var(--text-muted);">Font:</span>
+                    <select class="font-selector" id="fontSizeSelect">
+                        <option value="12">12px</option>
+                        <option value="13" selected>13px (Default)</option>
+                        <option value="14">14px</option>
+                        <option value="16">16px</option>
+                    </select>
+
+                    <button class="btn btn-primary" onclick="runCode()">
+                        <i class="fa-solid fa-play"></i> Jalankan
+                    </button>
+                    <button class="btn btn-danger" onclick="clearCode()">
+                        <i class="fa-solid fa-trash-can"></i> Hapus Semua
+                    </button>
+                    <button class="btn" onclick="pasteCode()">
+                        <i class="fa-solid fa-paste"></i> Paste
+                    </button>
+                    <button class="btn" onclick="copyCode()">
+                        <i class="fa-solid fa-copy"></i> Copy Code
+                    </button>
+
+                    <div class="tab-dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monaco Editor Container -->
+            <div class="editor-container">
+                <div id="monaco-editor"></div>
+            </div>
+
+            <!-- WSL Terminal Simulator Bottom -->
+            <div class="terminal-panel">
+                <div class="terminal-header">
+                    <span><i class="fa-solid fa-terminal"></i> Terminal Output (root@senpat-wsl:~#)</span>
+                    <span style="cursor: pointer;" onclick="clearTerminal()">Clear</span>
+                </div>
+                <div class="terminal-body" id="terminalOutput">
+<span class="prompt-line">root@senpat-wsl:~#</span> python3 -m http.server 5555
+[INFO] Backend Engine ready at port 5555
+[SUCCESS] Server status running OK.
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Live Preview Pane -->
+        <div class="right-pane">
+            <div class="preview-toolbar">
+                <span style="color: var(--text-muted); font-size: 11px;">
+                    <i class="fa-solid fa-desktop"></i> Live Device Preview
+                </span>
+
+                <div class="device-switcher">
+                    <button class="device-btn active" id="btn-iphone" onclick="setDevice('iphone')">
+                        <i class="fa-solid fa-mobile-screen-button"></i> iPhone
+                    </button>
+                    <button class="device-btn" id="btn-tablet" onclick="setDevice('tablet')">
+                        <i class="fa-solid fa-tablet-screen-button"></i> Tablet
+                    </button>
+                    <button class="device-btn" id="btn-fullscreen" onclick="setDevice('fullscreen')">
+                        <i class="fa-solid fa-expand"></i> Full Screen
+                    </button>
+                </div>
+
+                <span style="color: var(--text-muted); font-size: 10px;" id="resolutionLabel">iPhone 15 Pro (375px x 750px)</span>
+            </div>
+
+            <!-- Device Viewport -->
+            <div class="preview-viewport">
+                <!-- Background Globe TERISOLASI SEMPURNA -->
+                <div class="bg-globe-container">
+                    <svg class="bg-globe-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="250" cy="250" r="240" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="8,8"/>
+                        <circle cx="250" cy="250" r="210" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
+                        <circle cx="250" cy="250" r="180" fill="none" stroke="#6366f1" stroke-width="1"/>
+                        <ellipse cx="250" cy="250" rx="240" ry="60" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <ellipse cx="250" cy="250" rx="240" ry="140" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <ellipse cx="250" cy="250" rx="240" ry="200" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+                        <line x1="10" y1="250" x2="490" y2="250" stroke="#6366f1" stroke-width="2"/>
+                        <ellipse cx="250" cy="250" rx="60" ry="240" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <ellipse cx="250" cy="250" rx="140" ry="240" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <ellipse cx="250" cy="250" rx="200" ry="240" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+                        <line x1="250" y1="10" x2="250" y2="490" stroke="#6366f1" stroke-width="2"/>
+                        <ellipse cx="250" cy="250" rx="230" ry="90" fill="none" stroke="#38bdf8" stroke-width="2" transform="rotate(45 250 250)"/>
+                        <ellipse cx="250" cy="250" rx="230" ry="90" fill="none" stroke="#a855f7" stroke-width="2" transform="rotate(-45 250 250)"/>
+                    </svg>
+                </div>
+
+                <div class="frame-container frame-iphone" id="frameWrapper">
+                    <iframe id="previewFrame"></iframe>
+                </div>
+            </div>
+
+            <!-- SINGLE PILL INTEGRATED MUSIC WIDGET -->
+            <div class="music-widget-wrapper">
+                <div class="music-pill-container" id="musicPill">
+                    <button class="music-toggle-btn" onclick="toggleMusicWidget()">
+                        <i class="fa-solid fa-music switch-icon" id="musicIcon"></i>
+                        <span id="musicLabel">Music OFF</span>
+                    </button>
+
+                    <div class="music-input-expand">
+                        <input type="text" class="yt-input" id="ytUrlInput" placeholder="Paste link YouTube..." onkeydown="handleYtKey(event)">
+                        <button class="yt-play-btn" onclick="playYtMusic()" title="Play Audio">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <iframe id="youtubePlayerFrame" allow="autoplay"></iframe>
+            <audio id="lofiAudio" loop src="https://stream.zeno.fm/f3wvbbqmdg8uv"></audio>
+        </div>
+
+    </div>
+
+    <script>
+        let codeStore = {
+            html: `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111827;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: #1f2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 80%;
+        }
+        h1 { color: #60a5fa; margin-bottom: 0.5rem; }
+        p { color: #9ca3af; font-size: 0.95rem; }
+        .btn-demo {
+            margin-top: 1rem;
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-demo:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>✨ My Project</h1>
+        <p>Aplikasi Web IDE CODING SENPAI siap digunakan!</p>
+        <button class="btn-demo" onclick="alert('Hello dari Live Preview!')">Klik Saya</button>
+    </div>
+</body>
+</html>`,
+            python: `# Backend Logic Simulator (main.py)
+import sys
+
+def main():
+    print("Executing Python App Engine...")
+    print("Python Version:", sys.version)
+
+if __name__ == "__main__":
+    main()`
+        };
+
+        let currentTab = 'html';
+        let editor;
+
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                value: codeStore.html,
+                language: 'html',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                fontSize: 13,
+                minimap: { enabled: false },
+                lineNumbers: "on",
+                scrollBeyondLastLine: false,
+                roundedSelection: true
+            });
+
+            runCode();
+        });
+
+        function switchTab(tabName) {
+            codeStore[currentTab] = editor.getValue();
+            currentTab = tabName;
+
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const langMap = { html: 'html', python: 'python' };
+            monaco.editor.setModelLanguage(editor.getModel(), langMap[tabName]);
+            editor.setValue(codeStore[tabName]);
+        }
+
+        function runCode() {
+            if (currentTab === 'html') {
+                codeStore.html = editor.getValue();
+            }
+
+            const iframe = document.getElementById('previewFrame');
+            const previewDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            previewDoc.open();
+            previewDoc.write(codeStore.html);
+            previewDoc.close();
+
+            logTerminal(`[SUCCESS] Compiled & Rendered successfully at ${new Date().toLocaleTimeString()}`);
+        }
+
+        document.getElementById('fontSizeSelect').addEventListener('change', function(e) {
+            editor.updateOptions({ fontSize: parseInt(e.target.value) });
+        });
+
+        function setDevice(device) {
+            const frame = document.getElementById('frameWrapper');
+            const label = document.getElementById('resolutionLabel');
+
+            document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (device === 'iphone') {
+                document.getElementById('btn-iphone').classList.add('active');
+                frame.className = 'frame-container frame-iphone';
+                label.innerText = 'iPhone 15 Pro (375px x 750px)';
+            } else if (device === 'tablet') {
+                document.getElementById('btn-tablet').classList.add('active');
+                frame.className = 'frame-container frame-tablet';
+                label.innerText = 'Tablet View (600px x 520px)';
+            } else if (device === 'fullscreen') {
+                document.getElementById('btn-fullscreen').classList.add('active');
+                frame.className = 'frame-container frame-fullscreen';
+                label.innerText = 'Full Screen (100% Responsive)';
+            }
+        }
+
+        function clearCode() {
+            editor.setValue('');
+            logTerminal(`[WARN] Editor cleared.`);
+        }
+
+        async function pasteCode() {
+            const text = await navigator.clipboard.readText();
+            editor.setValue(text);
+            logTerminal(`[INFO] Code pasted from clipboard.`);
+        }
+
+        function copyCode() {
+            navigator.clipboard.writeText(editor.getValue());
+            logTerminal(`[INFO] Code copied to clipboard.`);
+        }
+
+        function logTerminal(msg) {
+            const term = document.getElementById('terminalOutput');
+            term.innerText += `\n${msg}`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminalOutput').innerText = 'root@senpat-wsl:~# python3 -m http.server 5555\n[INFO] Backend Engine ready at port 5555';
+        }
+
+        // --- CAROUSEL QUOTES 5 DETIK ---
+        const quotes = [
+            '" Nangis Boleh namun Jangan Menyerah! " - W. Kusuma -',
+            '" Stay Hungry, Stay Foolish. " - Steve Jobs -',
+            '" Uang tidak bisa beli kebahagiaan, tapi bisa beli ayam geprek. " - Mas Yanto -'
+        ];
+        let currentQuoteIndex = 0;
+
+        setInterval(() => {
+            const quoteEl = document.getElementById('quoteDisplay');
+            quoteEl.classList.add('fade-out');
+            
+            setTimeout(() => {
+                currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
+                quoteEl.innerText = quotes[currentQuoteIndex];
+                quoteEl.classList.remove('fade-out');
+            }, 500);
+        }, 5000);
+
+// --- APK BUILDER NATIVE COMPILER ENGINE ---
+async function buildAPK() {
+            logTerminal(`[BUILD] Mengirim kode HTML ke Converter WSL...`);
+
+            let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
+
+            // 1. Ekstrak judul dari tag <title>...</title> di kode HTML
+            let appName = "Coding_Senpai_App";
+            const match = htmlContent.match(/<title>(.*?)<\/title>/i);
+            if (match && match[1].trim() !== '') {
+                // Bersihkan karakter aneh agar aman dijadikan nama file
+                appName = match[1].trim().replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
+            }
+
+            logTerminal(`[INFO] Judul terdeteksi: '${appName}'. Memproses pembuatan APK...`);
+
+            const apkBtn = document.getElementById('apkBtn');
+            apkBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Building APK...`;
+
+            try {
+                // Send Request dengan Header X-App-Name
+                const response = await fetch('/build-apk-local', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'text/html',
+                        'X-App-Name': appName
+                    },
+                    body: htmlContent
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    
+                    // 2. Unduh file APK dengan nama sesuai judul
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${appName}.apk`;
+                    link.click();
+
+                    logTerminal(`[SUCCESS] File '${appName}.apk' berhasil terbuat & diunduh! (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+                    logTerminal(`[INFO] Siap diinstal di HP Android.`);
+                } else {
+                    throw new Error("Proses kompilasi di WSL gagal.");
+                }
+            } catch (err) {
+                logTerminal(`[ERROR] ${err.message}`);
+            } finally {
+                apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
+            }
+        }
+
+        // --- LOGIKA MUSIC WIDGET ---
+        let isMusicActive = false;
+
+        function toggleMusicWidget() {
+            const pill = document.getElementById('musicPill');
+            const label = document.getElementById('musicLabel');
+            const icon = document.getElementById('musicIcon');
+
+            isMusicActive = !isMusicActive;
+
+            if (isMusicActive) {
+                pill.classList.add('active');
+                label.innerText = 'Music ON';
+                icon.className = 'fa-solid fa-compact-disc fa-spin switch-icon';
+                logTerminal(`[AUDIO] Panel Musik Aktif. Tempel link YouTube & tekan Enter.`);
+            } else {
+                pill.classList.remove('active');
+                label.innerText = 'Music OFF';
+                icon.className = 'fa-solid fa-music switch-icon';
+                stopMusic();
+                logTerminal(`[AUDIO] Musik dimatikan & panel ditutup.`);
+            }
+        }
+
+        function handleYtKey(e) {
+            if (e.key === 'Enter') {
+                playYtMusic();
+            }
+        }
+
+        function playYtMusic() {
+            const inputVal = document.getElementById('ytUrlInput').value.trim();
+            const ytFrame = document.getElementById('youtubePlayerFrame');
+            const lofiAudio = document.getElementById('lofiAudio');
+
+            if (!inputVal) {
+                lofiAudio.play();
+                logTerminal(`[AUDIO] Memutar Default Lofi Chill Beats Stream.`);
+                return;
+            }
+
+            let videoId = '';
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = inputVal.match(regExp);
+
+            if (match && match[2].length === 11) {
+                videoId = match[2];
+                ytFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&loop=1`;
+                lofiAudio.pause();
+                logTerminal(`[AUDIO] Memutar YouTube Track ID: ${videoId}`);
+            } else if (inputVal.startsWith('http')) {
+                lofiAudio.src = inputVal;
+                lofiAudio.play();
+                logTerminal(`[AUDIO] Memutar Direct Audio URL Stream.`);
+            } else {
+                logTerminal(`[WARN] Format Link YouTube tidak valid.`);
+            }
+        }
+
+        function stopMusic() {
+            const ytFrame = document.getElementById('youtubePlayerFrame');
+            const lofiAudio = document.getElementById('lofiAudio');
+            
+            ytFrame.src = '';
+            lofiAudio.pause();
+        }
+    </script>
+</body>
+</html>
