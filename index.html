@@ -103,7 +103,7 @@
                     <button onclick="setDevice('full')" id="btn-full" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
                     <button onclick="toggleChat()" id="btn-chat" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1.5 cursor-pointer transition relative">
                         <i class="fa-solid fa-comments"></i> Chat
-                        <span id="onlineBadgeNav" class="bg-emerald-400 text-slate-950 font-bold text-[10px] px-1.5 rounded-full">1</span>
+                        <span id="onlineBadgeNav" class="bg-emerald-400 text-slate-950 font-bold text-[10px] px-1.5 rounded-full">0</span>
                         <span id="unreadDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping"></span>
                     </button>
                 </div>
@@ -119,50 +119,86 @@
 
             <!-- Panel Public Chat Room -->
             <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/95 p-4 overflow-hidden">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl relative">
+                    
                     <!-- Chat Header -->
                     <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             <h3 class="font-semibold text-sm text-white">Live Class Chat</h3>
                             <span id="onlineCountHeader" class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
-                                1 Online
+                                0 Online
                             </span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span id="myUserBadge" class="bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
-                                Menyiapkan...
+                            <span id="myUserBadge" class="hidden bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
+                                -
                             </span>
+                            <button id="btnLogoutChat" onclick="logoutChat()" title="Ganti Nama / Asal" class="hidden text-slate-400 hover:text-amber-400 text-xs px-1.5 py-0.5 rounded border border-slate-700 hover:border-amber-500/50 cursor-pointer transition">
+                                <i class="fa-solid fa-pen-to-square"></i> Ganti
+                            </button>
                             <button onclick="toggleChat()" class="text-slate-400 hover:text-white text-xs cursor-pointer ml-1">
                                 <i class="fa-solid fa-xmark text-base"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Bar Daftar User Online -->
-                    <div class="bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
-                        <span class="text-slate-400 whitespace-nowrap font-medium"><i class="fa-solid fa-users text-sky-400 mr-1"></i> Online:</span>
-                        <div id="onlineUsersList" class="flex items-center gap-1.5">
-                            <span class="bg-slate-800 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-mono">Memuat...</span>
+                    <!-- Form Login Simple (Muncul sebelum masuk chat) -->
+                    <div id="chatLoginView" class="flex-1 flex items-center justify-center p-6 bg-slate-900/90">
+                        <form onsubmit="submitChatLogin(event)" class="w-full max-w-xs bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+                            <div class="text-center space-y-1">
+                                <div class="w-10 h-10 bg-sky-600/20 border border-sky-500/40 text-sky-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fa-solid fa-user-check"></i>
+                                </div>
+                                <h4 class="text-sm font-bold text-white">Gabung Ruang Obrolan</h4>
+                                <p class="text-[11px] text-slate-400">Isi nama dan asalmu sebelum mulai chat</p>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Nama User</label>
+                                    <input type="text" id="loginNameInput" required maxlength="25" placeholder="Contoh: Budi / Pak Guru"
+                                        class="w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Asal (Kelas / Sekolah / Kota)</label>
+                                    <input type="text" id="loginOriginInput" required maxlength="30" placeholder="Contoh: XI RPL 1 / Semarang"
+                                        class="w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Chat
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Area Ruang Chat Utama (Muncul setelah login) -->
+                    <div id="chatRoomView" class="hidden flex-1 flex flex-col overflow-hidden">
+                        <!-- Bar Daftar User Online -->
+                        <div class="bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
+                            <span class="text-slate-400 whitespace-nowrap font-medium"><i class="fa-solid fa-users text-sky-400 mr-1"></i> Online:</span>
+                            <div id="onlineUsersList" class="flex items-center gap-1.5"></div>
+                        </div>
+
+                        <!-- Chat Messages List -->
+                        <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
+                            <div id="emptyChatNotice" class="text-center text-xs text-slate-500 my-4">
+                                Ruang obrolan kelas aktif. Silakan saling menyapa secara real-time!
+                            </div>
+                        </div>
+
+                        <!-- Chat Input Box -->
+                        <div class="p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
+                            <input type="text" id="chatInput" placeholder="Ketik pesan ke teman atau gurumu..." autocomplete="off"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
+                                class="flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
+                            <button type="button" onclick="sendChatMessage()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
+                                <i class="fa-solid fa-paper-plane"></i> Kirim
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Chat Messages List -->
-                    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
-                        <div id="emptyChatNotice" class="text-center text-xs text-slate-500 my-4">
-                            Ruang obrolan kelas aktif. Semua siswa dari HP maupun Laptop bisa saling menyapa secara real-time!
-                        </div>
-                    </div>
-
-                    <!-- Chat Input Box -->
-                    <div class="p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
-                        <input type="text" id="chatInput" placeholder="Sapa teman sekelas atau gurumu di sini..." autocomplete="off"
-                            onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
-                            class="flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
-                        <button type="button" onclick="sendChatMessage()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
-                            <i class="fa-solid fa-paper-plane"></i> Kirim
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -297,7 +333,7 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // REAL-TIME CLASS CHAT (GUN.JS + WEBRTC MESH)
+        // REAL-TIME CLASS CHAT WITH SIMPLE LOGIN
         // ==========================================
         const gun = Gun([
             'https://gun-manhattan.herokuapp.com/gun',
@@ -307,67 +343,116 @@ print("Coding Senpai WSL Backend Active!")`;
         ]);
 
         const todayKey = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const chatRoom = gun.get(`senpai_sinyoabe_chat_room_${todayKey}`);
-        const presenceNode = gun.get(`senpai_sinyoabe_presence_room_${todayKey}`);
-        const joinRegistry = gun.get(`senpai_sinyoabe_joins_room_${todayKey}`);
+        const chatRoom = gun.get(`senpai_sinyoabe_chat_login_${todayKey}`);
+        const presenceNode = gun.get(`senpai_sinyoabe_presence_login_${todayKey}`);
+        const joinRegistry = gun.get(`senpai_sinyoabe_joins_login_${todayKey}`);
 
-        function detectDeviceOrigin() {
-            const ua = navigator.userAgent;
-            if (/Android/i.test(ua)) return "HP Android";
-            if (/iPhone|iPad|iPod/i.test(ua)) return "iPhone/iPad";
-            if (/Windows/i.test(ua)) return "Laptop Windows";
-            if (/Mac/i.test(ua)) return "MacBook";
-            if (/Linux/i.test(ua)) return "Linux";
-            return "Browser";
-        }
-
-        const myDevice = detectDeviceOrigin();
         const myUniquePeerId = 'peer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        let myJoinTimestamp = Number(sessionStorage.getItem('senpai_join_ts_v3')) || Date.now();
-        sessionStorage.setItem('senpai_join_ts_v3', myJoinTimestamp);
-
-        let myUsername = "User #1";
+        let myProfile = JSON.parse(localStorage.getItem('senpai_chat_profile') || 'null');
         let isChatOpen = false;
         const renderedMsgIds = new Set();
         const messageBuffer = [];
         const activePeers = {};
-        const allJoinedPeers = {};
+        const joinOrderMap = {};
 
-        function registerJoin() {
-            joinRegistry.get(myUniquePeerId).put({
-                ts: myJoinTimestamp,
-                device: myDevice
-            });
-        }
-
+        // Pantau urutan masuk semua user yang sudah login
         joinRegistry.map().on((data, id) => {
             if (!data || !data.ts) return;
-            allJoinedPeers[id] = data.ts;
-            recalculateMyRank();
+            joinOrderMap[id] = data.ts;
+            updateUserRankDisplay();
         });
 
-        function recalculateMyRank() {
-            allJoinedPeers[myUniquePeerId] = myJoinTimestamp;
-            const sortedIds = Object.keys(allJoinedPeers).sort((a, b) => allJoinedPeers[a] - allJoinedPeers[b]);
-            const myIndex = sortedIds.indexOf(myUniquePeerId);
-            const rank = myIndex >= 0 ? myIndex + 1 : 1;
-            const shortCode = myUniquePeerId.slice(-2).toUpperCase(); myUsername = `User #${rank}-${shortCode}`;
-            document.getElementById('myUserBadge').textContent = `${myUsername} (${myDevice})`;
+        function getMyRank() {
+            if (!myProfile) return 1;
+            joinOrderMap[myUniquePeerId] = myProfile.joinedAt;
+            const sortedIds = Object.keys(joinOrderMap).sort((a, b) => joinOrderMap[a] - joinOrderMap[b]);
+            const idx = sortedIds.indexOf(myUniquePeerId);
+            return idx >= 0 ? idx + 1 : 1;
+        }
+
+        function updateUserRankDisplay() {
+            if (!myProfile) return;
+            const rank = getMyRank();
+            document.getElementById('myUserBadge').textContent = `#${rank} ${myProfile.name} (${myProfile.origin})`;
+        }
+
+        function submitChatLogin(e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('loginNameInput').value.trim();
+            const originVal = document.getElementById('loginOriginInput').value.trim();
+            if (!nameVal || !originVal) return;
+
+            myProfile = {
+                name: nameVal,
+                origin: originVal,
+                joinedAt: Date.now()
+            };
+            localStorage.setItem('senpai_chat_profile', JSON.stringify(myProfile));
+
+            // Daftarkan urutan masuk ke database P2P
+            joinRegistry.get(myUniquePeerId).put({
+                ts: myProfile.joinedAt,
+                name: myProfile.name,
+                origin: myProfile.origin
+            });
+
+            applyLoginUIState();
+            sendHeartbeat();
+        }
+
+        function logoutChat() {
+            if (myProfile) {
+                document.getElementById('loginNameInput').value = myProfile.name;
+                document.getElementById('loginOriginInput').value = myProfile.origin;
+            }
+            // Hapus status online sementara
+            presenceNode.get(myUniquePeerId).put(null);
+            myProfile = null;
+            localStorage.removeItem('senpai_chat_profile');
+            applyLoginUIState();
+        }
+
+        function applyLoginUIState() {
+            const loginView = document.getElementById('chatLoginView');
+            const roomView = document.getElementById('chatRoomView');
+            const badge = document.getElementById('myUserBadge');
+            const logoutBtn = document.getElementById('btnLogoutChat');
+
+            if (myProfile) {
+                loginView.classList.add('hidden');
+                roomView.classList.remove('hidden');
+                badge.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                updateUserRankDisplay();
+                renderAllMessages();
+                setTimeout(() => document.getElementById('chatInput').focus(), 100);
+            } else {
+                loginView.classList.remove('hidden');
+                roomView.classList.add('hidden');
+                badge.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+            }
         }
 
         function sendHeartbeat() {
-            recalculateMyRank();
+            if (!myProfile) return;
+            const rank = getMyRank();
+            updateUserRankDisplay();
             presenceNode.get(myUniquePeerId).put({
-                user: myUsername,
-                device: myDevice,
+                rank: rank,
+                name: myProfile.name,
+                origin: myProfile.origin,
                 lastSeen: Date.now()
             });
             updateOnlineUI();
         }
 
         presenceNode.map().on((data, id) => {
-            if (!data || !data.user || !data.lastSeen) return;
-            activePeers[id] = data;
+            if (!data || !data.name || !data.lastSeen) {
+                delete activePeers[id];
+            } else {
+                activePeers[id] = data;
+            }
             updateOnlineUI();
         });
 
@@ -375,14 +460,23 @@ print("Coding Senpai WSL Backend Active!")`;
             const now = Date.now();
             const onlineList = [];
 
-            onlineList.push({ id: myUniquePeerId, user: myUsername, device: myDevice, isMe: true });
+            if (myProfile) {
+                onlineList.push({
+                    id: myUniquePeerId,
+                    rank: getMyRank(),
+                    name: myProfile.name,
+                    origin: myProfile.origin,
+                    isMe: true
+                });
+            }
 
             Object.keys(activePeers).forEach(id => {
                 if (id !== myUniquePeerId && (now - activePeers[id].lastSeen < 15000)) {
                     onlineList.push({
                         id: id,
-                        user: activePeers[id].user,
-                        device: activePeers[id].device || 'Web',
+                        rank: activePeers[id].rank || '?',
+                        name: activePeers[id].name,
+                        origin: activePeers[id].origin,
                         isMe: false
                     });
                 }
@@ -399,18 +493,28 @@ print("Coding Senpai WSL Backend Active!")`;
                 badge.className = item.isMe 
                     ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap'
                     : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap';
-                badge.textContent = item.isMe ? `${item.user} • ${item.device} (Kamu)` : `${item.user} • ${item.device}`;
+                badge.textContent = item.isMe 
+                    ? `#${item.rank} ${item.name} (${item.origin}) • Kamu` 
+                    : `#${item.rank} ${item.name} (${item.origin})`;
                 listEl.appendChild(badge);
             });
         }
 
-        registerJoin();
-        sendHeartbeat();
+        // Jalankan cek sesi login saat halaman dimuat
+        if (myProfile) {
+            joinRegistry.get(myUniquePeerId).put({
+                ts: myProfile.joinedAt,
+                name: myProfile.name,
+                origin: myProfile.origin
+            });
+            applyLoginUIState();
+            sendHeartbeat();
+        }
         setInterval(sendHeartbeat, 3000);
         setInterval(updateOnlineUI, 3000);
 
         function addMessageToUI(id, msg) {
-            if (!msg || !msg.text || !msg.user || renderedMsgIds.has(id)) return;
+            if (!msg || !msg.text || !msg.name || renderedMsgIds.has(id)) return;
             renderedMsgIds.add(id);
 
             messageBuffer.push({ id, ...msg });
@@ -437,11 +541,12 @@ print("Coding Senpai WSL Backend Active!")`;
                 const isMe = msg.peerId === myUniquePeerId;
                 const bubble = document.createElement('div');
                 bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-                const originTag = msg.device ? ` • ${escapeHTML(msg.device)}` : '';
+                const rankPrefix = msg.rank ? `#${msg.rank} ` : '';
+                const originTag = msg.origin ? ` (${escapeHTML(msg.origin)})` : '';
                 
                 bubble.innerHTML = `
                     <span class="text-[11px] text-slate-400 mb-1 px-1">
-                        <strong class="${isMe ? 'text-sky-400' : 'text-emerald-400'}">${escapeHTML(msg.user)}</strong>${originTag} • ${escapeHTML(msg.time || '')}
+                        <strong class="${isMe ? 'text-sky-400' : 'text-emerald-400'}">${rankPrefix}${escapeHTML(msg.name)}</strong>${originTag} • ${escapeHTML(msg.time || '')}
                     </span>
                     <div class="px-3.5 py-2 rounded-2xl max-w-[82%] break-words text-xs shadow ${
                         isMe 
@@ -466,9 +571,8 @@ print("Coding Senpai WSL Backend Active!")`;
                 previewArea.classList.add('hidden');
                 chatPanel.classList.remove('hidden');
                 document.getElementById('unreadDot').classList.add('hidden');
-                sendHeartbeat();
-                renderAllMessages();
-                document.getElementById('chatInput').focus();
+                applyLoginUIState();
+                if (myProfile) sendHeartbeat();
             } else {
                 chatPanel.classList.add('hidden');
                 previewArea.classList.remove('hidden');
@@ -476,6 +580,7 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         function sendChatMessage() {
+            if (!myProfile) return;
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text) return;
@@ -485,20 +590,19 @@ print("Coding Senpai WSL Backend Active!")`;
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const ts = Date.now();
             const msgId = `msg_${ts}_${Math.random().toString(36).substr(2, 6)}`;
+            const rank = getMyRank();
 
             const msgData = {
                 peerId: myUniquePeerId,
-                user: myUsername,
-                device: myDevice,
+                rank: rank,
+                name: myProfile.name,
+                origin: myProfile.origin,
                 text: text,
                 time: timeStr,
                 ts: ts
             };
 
-            // 1. Tampilkan seketika di layar pengirim (0ms delay)
             addMessageToUI(msgId, msgData);
-
-            // 2. Siarkan ke seluruh siswa & relay server
             chatRoom.get(msgId).put(msgData);
             sendHeartbeat();
         }
