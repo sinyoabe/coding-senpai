@@ -13,6 +13,9 @@
         .phone-frame { width: 375px; height: 700px; border: 12px solid #1e293b; border-radius: 36px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); background: #111827; transition: all 0.3s ease; }
         .tablet-frame { width: 600px; height: 700px; border: 12px solid #1e293b; border-radius: 24px; }
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
+        /* Custom Scrollbar untuk Chat */
+        #chatMessages::-webkit-scrollbar { width: 6px; }
+        #chatMessages::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -90,21 +93,61 @@
             </div>
         </div>
 
-        <!-- Right Panel: Live Device Preview -->
-        <div class="w-1/2 flex flex-col bg-slate-900/50">
+        <!-- Right Panel: Live Device Preview & Chat -->
+        <div class="w-1/2 flex flex-col bg-slate-900/50 relative">
             <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
                 <span class="text-slate-400 font-medium"><i class="fa-solid fa-mobile-screen mr-1"></i> Live Device Preview</span>
                 <div class="flex items-center gap-1.5">
-                    <button onclick="setDevice('phone')" class="bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
-                    <button onclick="setDevice('tablet')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
-                    <button onclick="setDevice('full')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
+                    <button onclick="setDevice('phone')" id="btn-phone" class="bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
+                    <button onclick="setDevice('tablet')" id="btn-tablet" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
+                    <button onclick="setDevice('full')" id="btn-full" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
+                    <!-- TOMBOL CHAT BARU DI SAMPING FULL SCREEN -->
+                    <button onclick="toggleChat()" id="btn-chat" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1 cursor-pointer transition">
+                        <i class="fa-solid fa-comments"></i> Chat
+                    </button>
                 </div>
-                <span id="deviceLabel" class="text-slate-500">iPhone 15 Pro (375px x 700px)</span>
+                <span id="deviceLabel" class="text-slate-500 hidden xl:inline">iPhone 15 Pro (375px x 700px)</span>
             </div>
 
-            <div class="flex-1 flex items-center justify-center p-4 overflow-auto">
+            <!-- Area Preview -->
+            <div id="previewArea" class="flex-1 flex items-center justify-center p-4 overflow-auto">
                 <div id="previewContainer" class="phone-frame">
                     <iframe id="previewFrame" class="w-full h-full border-none bg-white"></iframe>
+                </div>
+            </div>
+
+            <!-- Panel Public Chat Room (Tersembunyi secara default) -->
+            <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/95 p-4 overflow-hidden">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+                    <!-- Chat Header -->
+                    <div class="bg-slate-800/80 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <h3 class="font-semibold text-sm text-white">Public Developer Chat</h3>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="myUserBadge" class="bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
+                                Menghubungkan...
+                            </span>
+                            <button onclick="toggleChat()" class="text-slate-400 hover:text-white text-xs cursor-pointer">
+                                <i class="fa-solid fa-xmark text-base"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages List -->
+                    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
+                        <div class="text-center text-xs text-slate-500 my-2">Memuat riwayat obrolan...</div>
+                    </div>
+
+                    <!-- Chat Input Box -->
+                    <form onsubmit="sendChatMessage(event)" class="p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
+                        <input type="text" id="chatInput" placeholder="Ketik pesan ke sesama pengguna..." autocomplete="off"
+                            class="flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
+                        <button type="submit" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
+                            <i class="fa-solid fa-paper-plane"></i> Kirim
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -217,21 +260,161 @@ print("Coding Senpai WSL Backend Active!")`;
 
         // Device Preview Switcher
         function setDevice(type) {
+            // Tutup panel chat jika sedang terbuka saat memilih mode perangkat
+            document.getElementById('chatPanel').classList.add('hidden');
+            document.getElementById('previewArea').classList.remove('hidden');
+
             const container = document.getElementById('previewContainer');
             const label = document.getElementById('deviceLabel');
+            
+            ['btn-phone', 'btn-tablet', 'btn-full'].forEach(id => {
+                document.getElementById(id).className = "bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer";
+            });
+
             if (type === 'phone') {
                 container.className = 'phone-frame';
                 label.textContent = 'iPhone 15 Pro (375px x 700px)';
+                document.getElementById('btn-phone').className = "bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             } else if (type === 'tablet') {
                 container.className = 'tablet-frame';
                 label.textContent = 'iPad Air (600px x 700px)';
+                document.getElementById('btn-tablet').className = "bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             } else {
                 container.className = 'full-frame';
                 label.textContent = 'Full Screen Responsive';
+                document.getElementById('btn-full').className = "bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             }
         }
 
-        // Utility: Get App Name from <title>
+        // ==========================================
+        // FITUR PUBLIC CHAT (URUTAN MASUK OTOMATIS)
+        // ==========================================
+        const DB_URL = "https://coding-senpai-chat-default-rtdb.asia-southeast1.firebasedatabase.app";
+        let myUsername = localStorage.getItem('senpai_chat_username');
+        let isChatOpen = false;
+        let chatPollingInterval = null;
+
+        function toggleChat() {
+            isChatOpen = !isChatOpen;
+            const chatPanel = document.getElementById('chatPanel');
+            const previewArea = document.getElementById('previewArea');
+
+            if (isChatOpen) {
+                previewArea.classList.add('hidden');
+                chatPanel.classList.remove('hidden');
+                initChatSession();
+            } else {
+                chatPanel.classList.add('hidden');
+                previewArea.classList.remove('hidden');
+                if (chatPollingInterval) clearInterval(chatPollingInterval);
+            }
+        }
+
+        async function initChatSession() {
+            // Jika user belum punya nomor urut, daftarkan berdasarkan urutan masuk ke server
+            if (!myUsername) {
+                try {
+                    const countRes = await fetch(`${DB_URL}/user_counter.json`);
+                    let currentCount = await countRes.json();
+                    let nextNumber = (currentCount || 0) + 1;
+
+                    // Update counter di database
+                    await fetch(`${DB_URL}/user_counter.json`, {
+                        method: 'PUT',
+                        body: JSON.stringify(nextNumber)
+                    });
+
+                    myUsername = `User #${nextNumber}`;
+                    localStorage.setItem('senpai_chat_username', myUsername);
+                } catch (e) {
+                    // Fallback jika offline/blokir jaringan
+                    const randomNum = Math.floor(100 + Math.random() * 900);
+                    myUsername = `User #${randomNum}`;
+                }
+            }
+
+            document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+            fetchMessages();
+
+            // Refresh pesan otomatis setiap 2 detik
+            if (chatPollingInterval) clearInterval(chatPollingInterval);
+            chatPollingInterval = setInterval(fetchMessages, 2000);
+        }
+
+        async function fetchMessages() {
+            try {
+                const res = await fetch(`${DB_URL}/messages.json?orderBy="$key"&limitToLast=50`);
+                const data = await res.json();
+                const container = document.getElementById('chatMessages');
+                
+                if (!data) {
+                    container.innerHTML = `<div class="text-center text-xs text-slate-500 my-4">Belum ada pesan. Jadilah yang pertama menyapa!</div>`;
+                    return;
+                }
+
+                const isAtBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
+                container.innerHTML = '';
+
+                Object.values(data).forEach(msg => {
+                    const isMe = msg.user === myUsername;
+                    const bubble = document.createElement('div');
+                    bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                    
+                    bubble.innerHTML = `
+                        <span class="text-[11px] text-slate-400 mb-1 px-1">${msg.user} • ${msg.time || ''}</span>
+                        <div class="px-3.5 py-2 rounded-2xl max-w-[80%] break-words text-xs ${
+                            isMe 
+                            ? 'bg-sky-600 text-white rounded-br-none' 
+                            : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
+                        }">
+                            ${escapeHTML(msg.text)}
+                        </div>
+                    `;
+                    container.appendChild(bubble);
+                });
+
+                if (isAtBottom) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            } catch (err) {
+                console.error("Gagal memuat pesan:", err);
+            }
+        }
+
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            try {
+                await fetch(`${DB_URL}/messages.json`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        user: myUsername || 'User',
+                        text: text,
+                        time: timeStr
+                    })
+                });
+                fetchMessages();
+            } catch (err) {
+                logTerminal(`[ERROR] Gagal mengirim pesan chat.`);
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
+        // ==========================================
+        // EXPORT PORTABLE & .APK BUILDER
+        // ==========================================
         function getAppName(htmlContent) {
             let appName = "Coding_Senpai_App";
             const match = htmlContent.match(/<title>(.*?)<\/title>/i);
@@ -241,7 +424,6 @@ print("Coding Senpai WSL Backend Active!")`;
             return appName;
         }
 
-        // Utility: Download File
         function downloadFile(blob, fileName) {
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -252,7 +434,6 @@ print("Coding Senpai WSL Backend Active!")`;
             URL.revokeObjectURL(link.href);
         }
 
-        // 1. TOMBOL PORTABLE
         function exportPortable() {
             try {
                 let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
@@ -266,7 +447,6 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        // 2. TOMBOL .APK BUILDER
         async function buildAPK() {
             let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
             let appName = getAppName(htmlContent);
