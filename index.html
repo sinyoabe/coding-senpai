@@ -351,7 +351,7 @@ print("Coding Senpai WSL Backend Active!")`;
             const sortedIds = Object.keys(allJoinedPeers).sort((a, b) => allJoinedPeers[a] - allJoinedPeers[b]);
             const myIndex = sortedIds.indexOf(myUniquePeerId);
             const rank = myIndex >= 0 ? myIndex + 1 : 1;
-            myUsername = `User #${rank}`;
+            const shortCode = myUniquePeerId.slice(-2).toUpperCase(); myUsername = `User #${rank}-${shortCode}`;
             document.getElementById('myUserBadge').textContent = `${myUsername} (${myDevice})`;
         }
 
