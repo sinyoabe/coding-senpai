@@ -100,8 +100,9 @@
                     <button onclick="setDevice('phone')" id="btn-phone" class="bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
                     <button onclick="setDevice('tablet')" id="btn-tablet" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
                     <button onclick="setDevice('full')" id="btn-full" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
-                    <button onclick="toggleChat()" id="btn-chat" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1 cursor-pointer transition">
+                    <button onclick="toggleChat()" id="btn-chat" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1.5 cursor-pointer transition">
                         <i class="fa-solid fa-comments"></i> Chat
+                        <span id="onlineBadgeNav" class="bg-emerald-400 text-slate-950 font-bold text-[10px] px-1.5 rounded-full">1</span>
                     </button>
                 </div>
                 <span id="deviceLabel" class="text-slate-500 hidden xl:inline">iPhone 15 Pro (375px x 700px)</span>
@@ -118,10 +119,13 @@
             <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/95 p-4 overflow-hidden">
                 <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
                     <!-- Chat Header -->
-                    <div class="bg-slate-800/80 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                    <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             <h3 class="font-semibold text-sm text-white">Public Developer Chat</h3>
+                            <span id="onlineCountHeader" class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                1 Online
+                            </span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span id="myUserBadge" class="bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
@@ -130,6 +134,14 @@
                             <button onclick="toggleChat()" class="text-slate-400 hover:text-white text-xs cursor-pointer">
                                 <i class="fa-solid fa-xmark text-base"></i>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Bar Daftar User Online -->
+                    <div class="bg-slate-950/70 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
+                        <span class="text-slate-500 whitespace-nowrap"><i class="fa-solid fa-users text-sky-400 mr-1"></i> Aktif:</span>
+                        <div id="onlineUsersList" class="flex items-center gap-1.5">
+                            <span class="bg-slate-800 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-mono">Memuat...</span>
                         </div>
                     </div>
 
@@ -253,6 +265,7 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         function setDevice(type) {
+            isChatOpen = false;
             document.getElementById('chatPanel').classList.add('hidden');
             document.getElementById('previewArea').classList.remove('hidden');
 
@@ -279,17 +292,19 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // FITUR PUBLIC CHAT REAL-TIME (GUN.JS P2P)
+        // FITUR PUBLIC CHAT & ONLINE PRESENCE (GUN.JS)
         // ==========================================
         const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
         const chatRoom = gun.get('coding_senpai_sinyoabe_chat_v2');
         const userCounterNode = gun.get('coding_senpai_sinyoabe_counter_v2');
+        const presenceNode = gun.get('coding_senpai_sinyoabe_presence_v2');
         
         let myUsername = localStorage.getItem('senpai_chat_username_v2');
+        const sessionTabId = 'tab_' + Math.random().toString(36).substr(2, 8);
         let isChatOpen = false;
         const renderedMsgIds = new Set();
+        const activePeers = {};
 
-        // Bersihkan cache lama yang rusak ([object Object])
         if (localStorage.getItem('senpai_chat_username')) {
             localStorage.removeItem('senpai_chat_username');
         }
@@ -297,6 +312,7 @@ print("Coding Senpai WSL Backend Active!")`;
         function initUserIdentity() {
             if (myUsername && !myUsername.includes('object')) {
                 document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+                sendHeartbeat();
                 return;
             }
 
@@ -310,9 +326,9 @@ print("Coding Senpai WSL Backend Active!")`;
                 myUsername = `User #${nextNum}`;
                 localStorage.setItem('senpai_chat_username_v2', myUsername);
                 document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+                sendHeartbeat();
             });
 
-            // Fallback cepat jika relay P2P butuh waktu merespons
             setTimeout(() => {
                 if (!assigned) {
                     assigned = true;
@@ -320,9 +336,60 @@ print("Coding Senpai WSL Backend Active!")`;
                     userCounterNode.put({ count: 1 });
                     localStorage.setItem('senpai_chat_username_v2', myUsername);
                     document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+                    sendHeartbeat();
                 }
             }, 1200);
         }
+
+        // Sistem Heartbeat Online Presence (kirim sinyal aktif tiap 5 detik)
+        function sendHeartbeat() {
+            if (!myUsername) return;
+            presenceNode.get(sessionTabId).put({
+                user: myUsername,
+                lastSeen: Date.now()
+            });
+            updateOnlineUI();
+        }
+
+        presenceNode.map().on((data, id) => {
+            if (!data || !data.user || !data.lastSeen) return;
+            activePeers[id] = data;
+            updateOnlineUI();
+        });
+
+        function updateOnlineUI() {
+            const now = Date.now();
+            const onlineUsers = new Set();
+            if (myUsername) onlineUsers.add(myUsername);
+
+            // Anggap online jika aktif dalam 15 detik terakhir
+            Object.keys(activePeers).forEach(id => {
+                if (now - activePeers[id].lastSeen < 15000) {
+                    onlineUsers.add(activePeers[id].user);
+                }
+            });
+
+            const count = onlineUsers.size;
+            document.getElementById('onlineBadgeNav').textContent = count;
+            document.getElementById('onlineCountHeader').textContent = `${count} Online`;
+
+            const listEl = document.getElementById('onlineUsersList');
+            listEl.innerHTML = '';
+            onlineUsers.forEach(u => {
+                const isMe = u === myUsername;
+                const badge = document.createElement('span');
+                badge.className = isMe 
+                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap';
+                badge.textContent = isMe ? `${u} (Kamu)` : u;
+                listEl.appendChild(badge);
+            });
+        }
+
+        // Jalankan heartbeat otomatis sejak web dibuka
+        initUserIdentity();
+        setInterval(sendHeartbeat, 5000);
+        setInterval(updateOnlineUI, 5000);
 
         // Dengarkan pesan masuk secara real-time
         chatRoom.map().on((msg, id) => {
@@ -383,6 +450,7 @@ print("Coding Senpai WSL Backend Active!")`;
                 text: text,
                 time: timeStr
             });
+            sendHeartbeat();
         }
 
         function escapeHTML(str) {
