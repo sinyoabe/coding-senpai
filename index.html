@@ -1,868 +1,213 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CODING SENPAI - Web IDE & WSL</title>
-    <!-- Font Awesome Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Monaco Editor CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js"></script>
     <style>
-        :root {
-            --bg-dark: #0f111a;
-            --panel-bg: #161925;
-            --editor-bg: #1a1d2d;
-            --accent: #5d66ef;
-            --accent-hover: #4b53d6;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border: #232738;
-            --success: #10b981;
-            --danger: #ef4444;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* Top Header Navigation */
-        .top-navbar {
-            height: 48px;
-            background-color: var(--panel-bg);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            font-size: 13px;
-            position: relative;
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.5px;
-            z-index: 2;
-        }
-
-        .user-badge {
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .blinking-love {
-            color: #ec4899;
-            font-size: 11px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            animation: blinker 1.2s infinite;
-        }
-
-        /* Quotes Header */
-        .header-quotes-center {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-style: italic;
-            color: #cbd5e1;
-            background: rgba(15, 17, 26, 0.6);
-            padding: 4px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            max-width: 450px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            z-index: 1;
-        }
-
-        .quote-text {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .quote-text.fade-out {
-            opacity: 0;
-            transform: translateY(-8px);
-        }
-
-        .blinking-text {
-            color: #f59e0b;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            animation: blinker 1.2s infinite;
-        }
-
-        @keyframes blinker {
-            0% { opacity: 1.0; }
-            50% { opacity: 0.2; }
-            100% { opacity: 1.0; }
-        }
-
-        .btn {
-            background: #232738;
-            color: var(--text-main);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 4px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 11px;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.2s ease;
-        }
-
-        .btn:hover {
-            background: #2d3248;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-        .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.25);
-        }
-
-        .font-selector {
-            background: #232738;
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 3px 6px;
-            border-radius: 6px;
-            font-size: 11px;
-            outline: none;
-        }
-
-        .right-tools {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 2;
-        }
-
-        .badge-green {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        /* Workspace View */
-        .workspace {
-            display: flex;
-            flex: 1;
-            height: calc(100vh - 48px);
-            position: relative;
-        }
-
-        .left-pane {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-            background: var(--editor-bg);
-        }
-
-        /* Code Editor Tabs Bar */
-        .tab-bar {
-            height: 38px;
-            background-color: var(--panel-bg);
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            gap: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .tab {
-            padding: 6px 12px;
-            font-size: 12px;
-            color: var(--text-muted);
-            border-radius: 6px 6px 0 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: transparent;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .tab.active {
-            color: #fff;
-            background: var(--editor-bg);
-            border-color: var(--border);
-            border-bottom-color: var(--editor-bg);
-        }
-
-        .tab-controls-inline {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .tab-dots {
-            display: flex;
-            gap: 5px;
-            margin-left: 4px;
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-        .dot-red { background: #ff5f56; }
-        .dot-yellow { background: #ffbd2e; }
-        .dot-green { background: #27c93f; }
-
-        .editor-container {
-            flex: 1;
-            position: relative;
-            width: 100%;
-        }
-
-        #monaco-editor {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Terminal Bar Bottom */
-        .terminal-panel {
-            height: 150px;
-            background: #0d0f17;
-            border-top: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            font-family: 'Fira Code', monospace;
-        }
-
-        .terminal-header {
-            height: 28px;
-            background: #131622;
-            padding: 0 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 11px;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .terminal-body {
-            flex: 1;
-            padding: 10px;
-            font-size: 12px;
-            color: #a7f3d0;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-
-        .prompt-line {
-            color: #38bdf8;
-        }
-
-        /* Right Preview Pane */
-        .right-pane {
-            width: 50%;
-            background: #0d0f17;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .preview-toolbar {
-            height: 40px;
-            background: var(--panel-bg);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            font-size: 12px;
-            z-index: 10;
-        }
-
-        .device-switcher {
-            display: flex;
-            background: #0f111a;
-            padding: 3px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            gap: 2px;
-        }
-
-        .device-btn {
-            padding: 4px 10px;
-            font-size: 11px;
-            border-radius: 6px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.2s;
-        }
-
-        .device-btn.active {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .preview-viewport {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Mengunci scrollbar internal jika meluap */
-            padding: 20px;
-            background: radial-gradient(circle at center, #1a1c2e 0%, #0d0e15 100%);
-            position: relative;
-        }
-
-        /* --- PERBAIKAN ANIMASI GLOBE STABIL & TERISOLASI --- */
-        .bg-globe-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 700px;
-            height: 700px;
-            margin-top: -350px;
-            margin-left: -350px;
-            pointer-events: none;
-            opacity: 0.05;
-            z-index: 1;
-            contain: strict;
-        }
-
-        .bg-globe-svg {
-            width: 100%;
-            height: 100%;
-            transform-origin: center center;
-            will-change: transform;
-            animation: pureGlobeSpin 60s linear infinite;
-        }
-
-        @keyframes pureGlobeSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Mockup Devices Styling */
-        .frame-container {
-            transition: all 0.3s ease;
-            position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            z-index: 5;
-        }
-
-        /* iPhone Frame */
-        .frame-iphone {
-            width: 375px;
-            height: 680px;
-            background: #000;
-            border-radius: 40px;
-            border: 10px solid #2d303e;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .frame-iphone::before {
-            content: '';
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90px;
-            height: 22px;
-            background: #000;
-            border-radius: 20px;
-            z-index: 10;
-        }
-
-        /* Tablet Frame */
-        .frame-tablet {
-            width: 600px;
-            height: 520px;
-            background: #111;
-            border-radius: 20px;
-            border: 12px solid #2b2d3c;
-        }
-
-        /* Fullscreen Frame */
-        .frame-fullscreen {
-            width: 100%;
-            height: 100%;
-            border-radius: 0;
-            border: none;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #fff;
-        }
-
-        /* --- STYLES WIDGET MUSIK PRESISI --- */
-        .music-widget-wrapper {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            z-index: 30;
-            display: flex;
-            align-items: center;
-        }
-
-        .music-pill-container {
-            background: rgba(22, 25, 37, 0.92);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 30px;
-            padding: 4px 6px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
-        }
-
-        .music-pill-container.active {
-            border-color: rgba(93, 102, 239, 0.5);
-            box-shadow: 0 0 20px rgba(93, 102, 239, 0.25);
-        }
-
-        .music-toggle-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            padding: 6px 12px;
-            border-radius: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-            transition: background 0.3s ease;
-        }
-
-        .music-pill-container.active .music-toggle-btn {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .switch-icon {
-            font-size: 12px;
-        }
-
-        .music-input-expand {
-            max-width: 0;
-            opacity: 0;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
-        }
-
-        .music-pill-container.active .music-input-expand {
-            max-width: 250px;
-            opacity: 1;
-            margin-left: 8px;
-            margin-right: 4px;
-        }
-
-        .yt-input {
-            background: rgba(15, 17, 26, 0.8);
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 4px 10px;
-            border-radius: 14px;
-            font-size: 11px;
-            width: 190px;
-            outline: none;
-            font-family: inherit;
-        }
-
-        .yt-input::placeholder {
-            color: var(--text-muted);
-            font-size: 10px;
-        }
-
-        .yt-play-btn {
-            background: var(--danger);
-            border: none;
-            color: #fff;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            flex-shrink: 0;
-            transition: transform 0.2s ease;
-        }
-
-        .yt-play-btn:hover {
-            transform: scale(1.1);
-        }
-
-        #youtubePlayerFrame {
-            display: none;
-            width: 0;
-            height: 0;
-        }
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        #editor { width: 100%; height: calc(100vh - 230px); font-size: 15px; }
+        .phone-frame { width: 375px; height: 700px; border: 12px solid #1e293b; border-radius: 36px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); background: #111827; transition: all 0.3s ease; }
+        .tablet-frame { width: 600px; height: 700px; border: 12px solid #1e293b; border-radius: 24px; }
+        .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen">
 
-    <!-- Header / Navbar -->
-    <div class="top-navbar">
-        <div class="logo-area">
-            <span class="user-badge">SINYOABE</span>
-            <span class="blinking-love"><i class="fa-solid fa-heart"></i> Made with Love</span>
+    <!-- Top Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <span class="bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider">SINYOABE</span>
+            <span class="text-xs text-slate-400"><i class="fa-solid fa-heart text-rose-500"></i> Made with Love</span>
         </div>
-
-        <div class="header-quotes-center">
-            <span class="quote-text" id="quoteDisplay">&quot; Nangis Boleh namun Jangan Menyerah! &quot; - W. Kusuma -</span>
+        <div class="text-xs italic text-slate-400 hidden md:block">
+            "Stay Hungry, Stay Foolish." - Steve Jobs
         </div>
-
-        <div class="right-tools">
-            <span class="blinking-text">export to &raquo;</span>
-            <span style="background: #d97706; color: #fff;" class="badge-green" onclick="exportPortable()"><i class="fa-solid fa-box"></i> Portable</span>
-            <span style="background: #059669; color: #fff;" class="badge-green" id="apkBtn" onclick="buildAPK()"><i class="fa-solid fa-android"></i> .APK Builder</span>
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 mr-1">export to <i class="fa-solid fa-arrow-right"></i></span>
+            <button onclick="exportPortable()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition cursor-pointer">
+                <i class="fa-solid fa-file-code"></i> Portable
+            </button>
+            <button id="apkBtn" onclick="buildAPK()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition cursor-pointer">
+                <i class="fa-brands fa-android"></i> .APK Builder
+            </button>
         </div>
-    </div>
+    </header>
 
     <!-- Main Workspace -->
-    <div class="workspace">
+    <div class="flex flex-1 overflow-hidden">
         
-        <!-- Left Code Editor Pane -->
-        <div class="left-pane">
-            <div class="tab-bar">
-                <div class="tab active" onclick="switchTab('html')">
-                    <i class="fa-brands fa-html5" style="color: #e34f26;"></i> index.html
+        <!-- Left Panel: Code Editor & Terminal -->
+        <div class="w-1/2 flex flex-col border-r border-slate-800 bg-slate-950">
+            <!-- Editor Toolbar -->
+            <div class="bg-slate-900 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <button onclick="switchTab('html')" id="tab-html" class="px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer">
+                        <i class="fa-brands fa-html5"></i> index.html
+                    </button>
+                    <button onclick="switchTab('py')" id="tab-py" class="px-2.5 py-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer">
+                        <i class="fa-brands fa-python"></i> main.py
+                    </button>
                 </div>
-                <div class="tab" onclick="switchTab('python')">
-                    <i class="fa-brands fa-python" style="color: #3776ab;"></i> main.py
-                </div>
-
-                <div class="tab-controls-inline">
-                    <span style="font-size: 11px; color: var(--text-muted);">Font:</span>
-                    <select class="font-selector" id="fontSizeSelect">
-                        <option value="12">12px</option>
-                        <option value="13" selected>13px (Default)</option>
-                        <option value="14">14px</option>
-                        <option value="16">16px</option>
+                <div class="flex items-center gap-1.5">
+                    <select onchange="changeFontSize(this.value)" class="bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700 outline-none">
+                        <option value="13px">Font: 13px (Default)</option>
+                        <option value="15px">Font: 15px</option>
+                        <option value="18px">Font: 18px</option>
                     </select>
-
-                    <button class="btn btn-primary" onclick="runCode()">
+                    <button onclick="runCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
                         <i class="fa-solid fa-play"></i> Jalankan
                     </button>
-                    <button class="btn btn-danger" onclick="clearCode()">
-                        <i class="fa-solid fa-trash-can"></i> Hapus Semua
+                    <button onclick="clearEditor()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
+                        <i class="fa-solid fa-trash"></i> Hapus Semua
                     </button>
-                    <button class="btn" onclick="pasteCode()">
+                    <button onclick="pasteCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer">
                         <i class="fa-solid fa-paste"></i> Paste
                     </button>
-                    <button class="btn" onclick="copyCode()">
+                    <button onclick="copyCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer">
                         <i class="fa-solid fa-copy"></i> Copy Code
                     </button>
-
-                    <div class="tab-dots">
-                        <div class="dot dot-red"></div>
-                        <div class="dot dot-yellow"></div>
-                        <div class="dot dot-green"></div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Monaco Editor Container -->
-            <div class="editor-container">
-                <div id="monaco-editor"></div>
-            </div>
+            <!-- Ace Code Editor -->
+            <div id="editor"></div>
 
-            <!-- WSL Terminal Simulator Bottom -->
-            <div class="terminal-panel">
-                <div class="terminal-header">
-                    <span><i class="fa-solid fa-terminal"></i> Terminal Output (root@senpat-wsl:~#)</span>
-                    <span style="cursor: pointer;" onclick="clearTerminal()">Clear</span>
+            <!-- Terminal Output -->
+            <div class="h-36 bg-black border-t border-slate-800 flex flex-col">
+                <div class="bg-slate-900 px-3 py-1 text-xs text-slate-400 flex justify-between items-center border-b border-slate-800">
+                    <span><i class="fa-solid fa-terminal text-emerald-400 mr-1"></i> Terminal Output (root@senpai-wsl:~#)</span>
+                    <button onclick="clearTerminal()" class="hover:text-white cursor-pointer">Clear</button>
                 </div>
-                <div class="terminal-body" id="terminalOutput">
-<span class="prompt-line">root@senpat-wsl:~#</span> python3 -m http.server 5555
-[INFO] Backend Engine ready at port 5555
-[SUCCESS] Server status running OK.
+                <div id="terminal" class="p-2.5 font-mono text-xs text-emerald-400 overflow-y-auto flex-1 space-y-1">
+                    <div>root@senpai-wsl:~# python3 -m http.server 5555</div>
+                    <div class="text-sky-400">[INFO] Backend Engine ready at port 5555</div>
+                    <div class="text-emerald-400">[SUCCESS] Server status running OK.</div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Live Preview Pane -->
-        <div class="right-pane">
-            <div class="preview-toolbar">
-                <span style="color: var(--text-muted); font-size: 11px;">
-                    <i class="fa-solid fa-desktop"></i> Live Device Preview
-                </span>
-
-                <div class="device-switcher">
-                    <button class="device-btn active" id="btn-iphone" onclick="setDevice('iphone')">
-                        <i class="fa-solid fa-mobile-screen-button"></i> iPhone
-                    </button>
-                    <button class="device-btn" id="btn-tablet" onclick="setDevice('tablet')">
-                        <i class="fa-solid fa-tablet-screen-button"></i> Tablet
-                    </button>
-                    <button class="device-btn" id="btn-fullscreen" onclick="setDevice('fullscreen')">
-                        <i class="fa-solid fa-expand"></i> Full Screen
-                    </button>
+        <!-- Right Panel: Live Device Preview -->
+        <div class="w-1/2 flex flex-col bg-slate-900/50">
+            <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-400 font-medium"><i class="fa-solid fa-mobile-screen mr-1"></i> Live Device Preview</span>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="setDevice('phone')" class="bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
+                    <button onclick="setDevice('tablet')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
+                    <button onclick="setDevice('full')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
                 </div>
-
-                <span style="color: var(--text-muted); font-size: 10px;" id="resolutionLabel">iPhone 15 Pro (375px x 750px)</span>
+                <span id="deviceLabel" class="text-slate-500">iPhone 15 Pro (375px x 700px)</span>
             </div>
 
-            <!-- Device Viewport -->
-            <div class="preview-viewport">
-                <!-- Background Globe TERISOLASI SEMPURNA -->
-                <div class="bg-globe-container">
-                    <svg class="bg-globe-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="250" cy="250" r="240" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="8,8"/>
-                        <circle cx="250" cy="250" r="210" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
-                        <circle cx="250" cy="250" r="180" fill="none" stroke="#6366f1" stroke-width="1"/>
-                        <ellipse cx="250" cy="250" rx="240" ry="60" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-                        <ellipse cx="250" cy="250" rx="240" ry="140" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-                        <ellipse cx="250" cy="250" rx="240" ry="200" fill="none" stroke="#cbd5e1" stroke-width="1"/>
-                        <line x1="10" y1="250" x2="490" y2="250" stroke="#6366f1" stroke-width="2"/>
-                        <ellipse cx="250" cy="250" rx="60" ry="240" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-                        <ellipse cx="250" cy="250" rx="140" ry="240" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-                        <ellipse cx="250" cy="250" rx="200" ry="240" fill="none" stroke="#cbd5e1" stroke-width="1"/>
-                        <line x1="250" y1="10" x2="250" y2="490" stroke="#6366f1" stroke-width="2"/>
-                        <ellipse cx="250" cy="250" rx="230" ry="90" fill="none" stroke="#38bdf8" stroke-width="2" transform="rotate(45 250 250)"/>
-                        <ellipse cx="250" cy="250" rx="230" ry="90" fill="none" stroke="#a855f7" stroke-width="2" transform="rotate(-45 250 250)"/>
-                    </svg>
-                </div>
-
-                <div class="frame-container frame-iphone" id="frameWrapper">
-                    <iframe id="previewFrame"></iframe>
+            <div class="flex-1 flex items-center justify-center p-4 overflow-auto">
+                <div id="previewContainer" class="phone-frame">
+                    <iframe id="previewFrame" class="w-full h-full border-none bg-white"></iframe>
                 </div>
             </div>
-
-            <!-- SINGLE PILL INTEGRATED MUSIC WIDGET -->
-            <div class="music-widget-wrapper">
-                <div class="music-pill-container" id="musicPill">
-                    <button class="music-toggle-btn" onclick="toggleMusicWidget()">
-                        <i class="fa-solid fa-music switch-icon" id="musicIcon"></i>
-                        <span id="musicLabel">Music OFF</span>
-                    </button>
-
-                    <div class="music-input-expand">
-                        <input type="text" class="yt-input" id="ytUrlInput" placeholder="Paste link YouTube..." onkeydown="handleYtKey(event)">
-                        <button class="yt-play-btn" onclick="playYtMusic()" title="Play Audio">
-                            <i class="fa-solid fa-play"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <iframe id="youtubePlayerFrame" allow="autoplay"></iframe>
-            <audio id="lofiAudio" loop src="https://stream.zeno.fm/f3wvbbqmdg8uv"></audio>
         </div>
 
     </div>
 
     <script>
-        let codeStore = {
-            html: `<!DOCTYPE html>
+        // Default Starter Code
+        const defaultHTML = `<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <title>My Project</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #111827;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-        .card {
-            background: #1f2937;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            text-align: center;
-            max-width: 80%;
-        }
+        body { margin: 0; padding: 0; background: #111827; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { background: #1f2937; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 80%; }
         h1 { color: #60a5fa; margin-bottom: 0.5rem; }
         p { color: #9ca3af; font-size: 0.95rem; }
-        .btn-demo {
-            margin-top: 1rem;
-            padding: 10px 20px;
-            background: #3b82f6;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .btn-demo:hover { background: #2563eb; }
+        .btn-demo { margin-top: 1rem; padding: 10px 20px; background: #3b82f6; border: none; color: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>✨ My Project</h1>
         <p>Aplikasi Web IDE CODING SENPAI siap digunakan!</p>
-        <button class="btn-demo" onclick="alert('Hello dari Live Preview!')">Klik Saya</button>
+        <button class="btn-demo" onclick="alert('Halo dari CODING SENPAI!')">Klik Saya</button>
     </div>
 </body>
-</html>`,
-            python: `# Backend Logic Simulator (main.py)
-import sys
+</html>`;
 
-def main():
-    print("Executing Python App Engine...")
-    print("Python Version:", sys.version)
-
-if __name__ == "__main__":
-    main()`
-        };
+        const defaultPy = `# Backend Python Server (WSL)
+import http.server
+print("Coding Senpai WSL Backend Active!")`;
 
         let currentTab = 'html';
-        let editor;
+        let codeStore = { html: defaultHTML, py: defaultPy };
 
-        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
-        require(['vs/editor/editor.main'], function() {
-            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
-                value: codeStore.html,
-                language: 'html',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                fontSize: 13,
-                minimap: { enabled: false },
-                lineNumbers: "on",
-                scrollBeyondLastLine: false,
-                roundedSelection: true
-            });
+        // Initialize Ace Editor
+        const editor = ace.edit("editor");
+        editor.setTheme("ace/theme/tomorrow_night_eighties");
+        editor.session.setMode("ace/mode/html");
+        editor.setValue(defaultHTML, -1);
 
-            runCode();
-        });
+        // Terminal Helper
+        function logTerminal(msg) {
+            const term = document.getElementById('terminal');
+            const line = document.createElement('div');
+            if (msg.includes('[ERROR]')) line.className = 'text-rose-400';
+            else if (msg.includes('[WARN]') || msg.includes('[TIP]')) line.className = 'text-amber-400';
+            else if (msg.includes('[INFO]') || msg.includes('[BUILD]')) line.className = 'text-sky-400';
+            else line.className = 'text-emerald-400';
+            line.textContent = msg;
+            term.appendChild(line);
+            term.scrollTop = term.scrollHeight;
+        }
 
-        function switchTab(tabName) {
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+        }
+
+        // Editor Actions
+        function switchTab(tab) {
             codeStore[currentTab] = editor.getValue();
-            currentTab = tabName;
+            currentTab = tab;
+            if (tab === 'html') {
+                editor.session.setMode("ace/mode/html");
+                editor.setValue(codeStore.html, -1);
+                document.getElementById('tab-html').className = "px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer";
+                document.getElementById('tab-py').className = "px-2.5 py-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer";
+            } else {
+                editor.session.setMode("ace/mode/python");
+                editor.setValue(codeStore.py, -1);
+                document.getElementById('tab-py').className = "px-2.5 py-1 rounded bg-slate-800 text-sky-400 font-medium cursor-pointer";
+                document.getElementById('tab-html').className = "px-2.5 py-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer";
+            }
+        }
 
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            const langMap = { html: 'html', python: 'python' };
-            monaco.editor.setModelLanguage(editor.getModel(), langMap[tabName]);
-            editor.setValue(codeStore[tabName]);
+        function changeFontSize(size) {
+            document.getElementById('editor').style.fontSize = size;
         }
 
         function runCode() {
-            if (currentTab === 'html') {
-                codeStore.html = editor.getValue();
-            }
-
-            const iframe = document.getElementById('previewFrame');
-            const previewDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-            previewDoc.open();
-            previewDoc.write(codeStore.html);
-            previewDoc.close();
-
-            logTerminal(`[SUCCESS] Compiled & Rendered successfully at ${new Date().toLocaleTimeString()}`);
+            if (currentTab === 'html') codeStore.html = editor.getValue();
+            const frame = document.getElementById('previewFrame');
+            frame.srcdoc = codeStore.html;
+            const now = new Date().toTimeString().split(' ')[0];
+            logTerminal(`[SUCCESS] Compiled & Rendered successfully at ${now}`);
         }
 
-        document.getElementById('fontSizeSelect').addEventListener('change', function(e) {
-            editor.updateOptions({ fontSize: parseInt(e.target.value) });
-        });
-
-        function setDevice(device) {
-            const frame = document.getElementById('frameWrapper');
-            const label = document.getElementById('resolutionLabel');
-
-            document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
-
-            if (device === 'iphone') {
-                document.getElementById('btn-iphone').classList.add('active');
-                frame.className = 'frame-container frame-iphone';
-                label.innerText = 'iPhone 15 Pro (375px x 750px)';
-            } else if (device === 'tablet') {
-                document.getElementById('btn-tablet').classList.add('active');
-                frame.className = 'frame-container frame-tablet';
-                label.innerText = 'Tablet View (600px x 520px)';
-            } else if (device === 'fullscreen') {
-                document.getElementById('btn-fullscreen').classList.add('active');
-                frame.className = 'frame-container frame-fullscreen';
-                label.innerText = 'Full Screen (100% Responsive)';
-            }
-        }
-
-        function clearCode() {
-            editor.setValue('');
+        function clearEditor() {
+            editor.setValue('', -1);
             logTerminal(`[WARN] Editor cleared.`);
         }
 
         async function pasteCode() {
-            const text = await navigator.clipboard.readText();
-            editor.setValue(text);
-            logTerminal(`[INFO] Code pasted from clipboard.`);
+            try {
+                const text = await navigator.clipboard.readText();
+                editor.setValue(text, -1);
+                logTerminal(`[INFO] Code pasted from clipboard.`);
+                runCode();
+            } catch (err) {
+                logTerminal(`[ERROR] Gagal paste clipboard: Izinkan akses clipboard di browser.`);
+            }
         }
 
         function copyCode() {
@@ -870,45 +215,61 @@ if __name__ == "__main__":
             logTerminal(`[INFO] Code copied to clipboard.`);
         }
 
-        function logTerminal(msg) {
-            const term = document.getElementById('terminalOutput');
-            term.innerText += `\n${msg}`;
-            term.scrollTop = term.scrollHeight;
+        // Device Preview Switcher
+        function setDevice(type) {
+            const container = document.getElementById('previewContainer');
+            const label = document.getElementById('deviceLabel');
+            if (type === 'phone') {
+                container.className = 'phone-frame';
+                label.textContent = 'iPhone 15 Pro (375px x 700px)';
+            } else if (type === 'tablet') {
+                container.className = 'tablet-frame';
+                label.textContent = 'iPad Air (600px x 700px)';
+            } else {
+                container.className = 'full-frame';
+                label.textContent = 'Full Screen Responsive';
+            }
         }
 
-        function clearTerminal() {
-            document.getElementById('terminalOutput').innerText = 'root@senpat-wsl:~# python3 -m http.server 5555\n[INFO] Backend Engine ready at port 5555';
-        }
-
-        // --- CAROUSEL QUOTES 5 DETIK ---
-        const quotes = [
-            '" Nangis Boleh namun Jangan Menyerah! " - W. Kusuma -',
-            '" Stay Hungry, Stay Foolish. " - Steve Jobs -',
-            '" Uang tidak bisa beli kebahagiaan, tapi bisa beli ayam geprek. " - Mas Yanto -'
-        ];
-        let currentQuoteIndex = 0;
-
-        setInterval(() => {
-            const quoteEl = document.getElementById('quoteDisplay');
-            quoteEl.classList.add('fade-out');
-            
-            setTimeout(() => {
-                currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
-                quoteEl.innerText = quotes[currentQuoteIndex];
-                quoteEl.classList.remove('fade-out');
-            }, 500);
-        }, 5000);
-
-// --- APK BUILDER NATIVE COMPILER ENGINE ---
-
-async function buildAPK() {
-            let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
-
+        // Utility: Get App Name from <title>
+        function getAppName(htmlContent) {
             let appName = "Coding_Senpai_App";
             const match = htmlContent.match(/<title>(.*?)<\/title>/i);
             if (match && match[1].trim() !== '') {
                 appName = match[1].trim().replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
             }
+            return appName;
+        }
+
+        // Utility: Download File
+        function downloadFile(blob, fileName) {
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        // 1. TOMBOL PORTABLE
+        function exportPortable() {
+            try {
+                let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
+                let appName = getAppName(htmlContent);
+
+                const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+                downloadFile(blob, `${appName}.html`);
+                logTerminal(`[SUCCESS] File Portable HTML '${appName}.html' berhasil diunduh!`);
+            } catch (err) {
+                logTerminal(`[ERROR] Gagal ekspor Portable: ${err.message}`);
+            }
+        }
+
+        // 2. TOMBOL .APK BUILDER
+        async function buildAPK() {
+            let htmlContent = currentTab === 'html' ? editor.getValue() : codeStore.html;
+            let appName = getAppName(htmlContent);
 
             logTerminal(`[BUILD] Menyiapkan paket APK Android...`);
             logTerminal(`[INFO] Judul Aplikasi: '${appName}'`);
@@ -919,7 +280,6 @@ async function buildAPK() {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
             if (isLocal) {
-                // Di Localhost: Kompilasi Native lewat Backend Python WSL (~3.35 MB)
                 try {
                     const response = await fetch('/build-apk-local', {
                         method: 'POST',
@@ -940,87 +300,22 @@ async function buildAPK() {
                 } catch (err) {
                     logTerminal(`[ERROR] ${err.message}`);
                 } finally {
-                    apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
+                    apkBtn.innerHTML = `<i class="fa-brands fa-android"></i> .APK Builder`;
                 }
             } else {
-                // Di GitHub Pages: Buat & Download Paket Direct APK
                 setTimeout(() => {
                     const apkBlob = new Blob([htmlContent], { type: "application/vnd.android.package-archive" });
                     downloadFile(apkBlob, `${appName}.apk`);
                     
                     logTerminal(`[SUCCESS] File '${appName}.apk' berhasil dikompilasi & diunduh!`);
                     logTerminal(`[TIP] Untuk kompilasi APK Native penuh (~3.35 MB), jalankan di Localhost (python3 main.py).`);
-                    apkBtn.innerHTML = `<i class="fa-solid fa-android"></i> .APK Builder`;
-                }, 1000);
+                    apkBtn.innerHTML = `<i class="fa-brands fa-android"></i> .APK Builder`;
+                }, 800);
             }
         }
 
-        // --- LOGIKA MUSIC WIDGET ---
-        let isMusicActive = false;
-
-        function toggleMusicWidget() {
-            const pill = document.getElementById('musicPill');
-            const label = document.getElementById('musicLabel');
-            const icon = document.getElementById('musicIcon');
-
-            isMusicActive = !isMusicActive;
-
-            if (isMusicActive) {
-                pill.classList.add('active');
-                label.innerText = 'Music ON';
-                icon.className = 'fa-solid fa-compact-disc fa-spin switch-icon';
-                logTerminal(`[AUDIO] Panel Musik Aktif. Tempel link YouTube & tekan Enter.`);
-            } else {
-                pill.classList.remove('active');
-                label.innerText = 'Music OFF';
-                icon.className = 'fa-solid fa-music switch-icon';
-                stopMusic();
-                logTerminal(`[AUDIO] Musik dimatikan & panel ditutup.`);
-            }
-        }
-
-        function handleYtKey(e) {
-            if (e.key === 'Enter') {
-                playYtMusic();
-            }
-        }
-
-        function playYtMusic() {
-            const inputVal = document.getElementById('ytUrlInput').value.trim();
-            const ytFrame = document.getElementById('youtubePlayerFrame');
-            const lofiAudio = document.getElementById('lofiAudio');
-
-            if (!inputVal) {
-                lofiAudio.play();
-                logTerminal(`[AUDIO] Memutar Default Lofi Chill Beats Stream.`);
-                return;
-            }
-
-            let videoId = '';
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = inputVal.match(regExp);
-
-            if (match && match[2].length === 11) {
-                videoId = match[2];
-                ytFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&loop=1`;
-                lofiAudio.pause();
-                logTerminal(`[AUDIO] Memutar YouTube Track ID: ${videoId}`);
-            } else if (inputVal.startsWith('http')) {
-                lofiAudio.src = inputVal;
-                lofiAudio.play();
-                logTerminal(`[AUDIO] Memutar Direct Audio URL Stream.`);
-            } else {
-                logTerminal(`[WARN] Format Link YouTube tidak valid.`);
-            }
-        }
-
-        function stopMusic() {
-            const ytFrame = document.getElementById('youtubePlayerFrame');
-            const lofiAudio = document.getElementById('lofiAudio');
-            
-            ytFrame.src = '';
-            lofiAudio.pause();
-        }
+        // Initial Render
+        runCode();
     </script>
 </body>
 </html>
