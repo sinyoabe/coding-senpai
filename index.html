@@ -121,28 +121,28 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl relative">
                     
                     <!-- Chat Header -->
-                    <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                    <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 shrink-0">
                             <span id="connStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" title="Menghubungkan server..."></span>
                             <h3 class="font-semibold text-sm text-white">Live Class Chat</h3>
                             <span id="onlineCountHeader" class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
                                 0 Online
                             </span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span id="myUserBadge" class="hidden bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <span id="myUserBadge" class="hidden bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-mono truncate max-w-[160px]">
                                 -
                             </span>
-                            <button id="btnLogoutChat" onclick="logoutChat()" title="Ganti Nama / Asal" class="hidden text-slate-400 hover:text-amber-400 text-xs px-1.5 py-0.5 rounded border border-slate-700 hover:border-amber-500/50 cursor-pointer transition">
-                                <i class="fa-solid fa-pen-to-square"></i> Ganti
+                            <button id="btnLeaveChat" onclick="leaveChat()" title="Keluar / Logout dari Chat" class="hidden bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white text-xs px-2 py-0.5 rounded border border-rose-500/40 cursor-pointer transition flex items-center gap-1 shrink-0">
+                                <i class="fa-solid fa-right-from-bracket"></i> Leave
                             </button>
-                            <button onclick="toggleChat()" class="text-slate-400 hover:text-white text-xs cursor-pointer ml-1">
+                            <button onclick="toggleChat()" title="Tutup Panel Chat" class="text-slate-400 hover:text-white text-xs cursor-pointer ml-1 shrink-0">
                                 <i class="fa-solid fa-xmark text-base"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Form Login Simple (Muncul sebelum masuk chat) -->
+                    <!-- Form Login Simple -->
                     <div id="chatLoginView" class="flex-1 flex items-center justify-center p-6 bg-slate-900/90">
                         <form onsubmit="submitChatLogin(event)" class="w-full max-w-xs bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
                             <div class="text-center space-y-1">
@@ -172,12 +172,18 @@
                         </form>
                     </div>
 
-                    <!-- Area Ruang Chat Utama (Muncul setelah login) -->
+                    <!-- Area Ruang Chat Utama -->
                     <div id="chatRoomView" class="hidden flex-1 flex flex-col overflow-hidden">
                         <!-- Bar Daftar User Online -->
                         <div class="bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
                             <span class="text-slate-400 whitespace-nowrap font-medium"><i class="fa-solid fa-users text-sky-400 mr-1"></i> Online:</span>
                             <div id="onlineUsersList" class="flex items-center gap-1.5"></div>
+                        </div>
+
+                        <!-- Info Auto Reset 12 Malam -->
+                        <div class="bg-slate-900/60 px-4 py-1 border-b border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
+                            <span><i class="fa-regular fa-clock mr-1"></i> Riwayat chat otomatis di-reset setiap pukul 00:00 (12 malam)</span>
+                            <span id="chatDateBadge" class="font-mono text-slate-400"></span>
                         </div>
 
                         <!-- Chat Messages List -->
@@ -332,11 +338,25 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // MQTT REAL-TIME WEBSOCKET CHAT & PRESENCE
+        // MQTT REAL-TIME CHAT + LEAVE + MIDNIGHT CLEAR
         // ==========================================
-        const TOPIC_BASE = "sinyoabe/coding-senpai/class-room-v1";
-        const TOPIC_MSG = `${TOPIC_BASE}/messages`;
-        const TOPIC_PRESENCE = `${TOPIC_BASE}/presence`;
+        function getLocalDateKey() {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        let currentChatDate = getLocalDateKey();
+        document.getElementById('chatDateBadge').textContent = currentChatDate;
+
+        function getTopicMsg(dateKey) {
+            return `sinyoabe/coding-senpai/class-room-${dateKey}/messages`;
+        }
+        function getTopicPresence(dateKey) {
+            return `sinyoabe/coding-senpai/class-room-${dateKey}/presence`;
+        }
 
         const myPeerId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         let myProfile = JSON.parse(localStorage.getItem('senpai_mqtt_profile') || 'null');
@@ -345,7 +365,12 @@ print("Coding Senpai WSL Backend Active!")`;
         const messageBuffer = [];
         const onlineUsersMap = {};
 
-        // Koneksi ke EMQX Public WSS Broker (Port 8084 SSL)
+        // Hapus sesi login lama jika sudah berganti hari (lewat pukul 12 malam)
+        if (myProfile && myProfile.dateKey && myProfile.dateKey !== currentChatDate) {
+            localStorage.removeItem('senpai_mqtt_profile');
+            myProfile = null;
+        }
+
         const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
             clientId: 'senpai_' + Math.random().toString(16).substr(2, 8),
             clean: true,
@@ -356,11 +381,10 @@ print("Coding Senpai WSL Backend Active!")`;
             const dot = document.getElementById('connStatusDot');
             if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
             
-            mqttClient.subscribe(TOPIC_MSG);
-            mqttClient.subscribe(TOPIC_PRESENCE);
+            mqttClient.subscribe(getTopicMsg(currentChatDate));
+            mqttClient.subscribe(getTopicPresence(currentChatDate));
 
-            // Siarkan kehadiran segera setelah terhubung
-            broadcastPresence();
+            if (myProfile) broadcastPresence('online');
         });
 
         mqttClient.on('offline', () => {
@@ -370,11 +394,12 @@ print("Coding Senpai WSL Backend Active!")`;
 
         mqttClient.on('message', (topic, payload) => {
             try {
+                if (topic !== getTopicMsg(currentChatDate) && topic !== getTopicPresence(currentChatDate)) return;
                 const data = JSON.parse(payload.toString());
 
-                if (topic === TOPIC_MSG) {
+                if (topic === getTopicMsg(currentChatDate)) {
                     addMessageToUI(data.id, data);
-                } else if (topic === TOPIC_PRESENCE) {
+                } else if (topic === getTopicPresence(currentChatDate)) {
                     if (data.status === 'offline') {
                         delete onlineUsersMap[data.peerId];
                     } else if (data.peerId && data.name) {
@@ -390,20 +415,59 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         });
 
+        // Cek pergantian hari otomatis setiap 10 detik (Auto Clear Chat pukul 00:00 malam)
+        setInterval(() => {
+            const latestDate = getLocalDateKey();
+            if (latestDate !== currentChatDate) {
+                const oldDate = currentChatDate;
+                currentChatDate = latestDate;
+                document.getElementById('chatDateBadge').textContent = currentChatDate;
+
+                // Unsubscribe topik kemarin & pindah ke topik hari baru
+                if (mqttClient && mqttClient.connected) {
+                    mqttClient.unsubscribe(getTopicMsg(oldDate));
+                    mqttClient.unsubscribe(getTopicPresence(oldDate));
+                    mqttClient.subscribe(getTopicMsg(currentChatDate));
+                    mqttClient.subscribe(getTopicPresence(currentChatDate));
+                }
+
+                // Bersihkan seluruh isi chat & daftar online
+                renderedMsgIds.clear();
+                messageBuffer.length = 0;
+                Object.keys(onlineUsersMap).forEach(k => delete onlineUsersMap[k]);
+
+                const container = document.getElementById('chatMessages');
+                if (container) {
+                    container.innerHTML = `<div id="emptyChatNotice" class="text-center text-xs text-slate-500 my-4">Hari baru (${currentChatDate}). Riwayat chat telah dibersihkan otomatis!</div>`;
+                }
+
+                if (myProfile) {
+                    myProfile.dateKey = currentChatDate;
+                    myProfile.joinedAt = Date.now();
+                    localStorage.setItem('senpai_mqtt_profile', JSON.stringify(myProfile));
+                    broadcastPresence('online');
+                } else {
+                    recalculateRanksAndUI();
+                }
+            }
+        }, 10000);
+
         function broadcastPresence(status = 'online') {
             if (!myProfile) return;
-            onlineUsersMap[myPeerId] = {
-                peerId: myPeerId,
-                name: myProfile.name,
-                origin: myProfile.origin,
-                joinedAt: myProfile.joinedAt,
-                lastSeen: Date.now(),
-                status: status
-            };
+            if (status === 'online') {
+                onlineUsersMap[myPeerId] = {
+                    peerId: myPeerId,
+                    name: myProfile.name,
+                    origin: myProfile.origin,
+                    joinedAt: myProfile.joinedAt,
+                    lastSeen: Date.now(),
+                    status: 'online'
+                };
+            }
             recalculateRanksAndUI();
 
             if (mqttClient && mqttClient.connected) {
-                mqttClient.publish(TOPIC_PRESENCE, JSON.stringify({
+                mqttClient.publish(getTopicPresence(currentChatDate), JSON.stringify({
                     peerId: myPeerId,
                     name: myProfile.name,
                     origin: myProfile.origin,
@@ -417,7 +481,6 @@ print("Coding Senpai WSL Backend Active!")`;
             const now = Date.now();
             const activeList = [];
 
-            // Bersihkan user yang sudah tidak mengirim sinyal > 12 detik
             Object.keys(onlineUsersMap).forEach(id => {
                 if (now - onlineUsersMap[id].lastSeen > 12000) {
                     delete onlineUsersMap[id];
@@ -426,10 +489,8 @@ print("Coding Senpai WSL Backend Active!")`;
                 }
             });
 
-            // Urutkan berdasarkan waktu login paling awal
             activeList.sort((a, b) => a.joinedAt - b.joinedAt);
 
-            // Beri nomor urut #1, #2, #3 dst.
             activeList.forEach((user, idx) => {
                 user.rank = idx + 1;
                 if (user.peerId === myPeerId && myProfile) {
@@ -445,6 +506,11 @@ print("Coding Senpai WSL Backend Active!")`;
             const listEl = document.getElementById('onlineUsersList');
             if (!listEl) return;
             listEl.innerHTML = '';
+
+            if (activeList.length === 0) {
+                listEl.innerHTML = '<span class="text-slate-500 text-[11px]">Belum ada yang aktif</span>';
+                return;
+            }
 
             activeList.forEach(u => {
                 const isMe = u.peerId === myPeerId;
@@ -469,38 +535,70 @@ print("Coding Senpai WSL Backend Active!")`;
                 name: nameVal,
                 origin: originVal,
                 joinedAt: Date.now(),
+                dateKey: currentChatDate,
                 rank: 1
             };
             localStorage.setItem('senpai_mqtt_profile', JSON.stringify(myProfile));
 
             applyLoginUIState();
             broadcastPresence('online');
+            publishSystemNotice(`${nameVal} (${originVal}) bergabung ke obrolan.`);
         }
 
-        function logoutChat() {
-            if (myProfile) {
-                document.getElementById('loginNameInput').value = myProfile.name;
-                document.getElementById('loginOriginInput').value = myProfile.origin;
-                broadcastPresence('offline');
-            }
+        // Fitur Leave Chat (Logout siswa)
+        function leaveChat() {
+            if (!myProfile) return;
+            const leavingName = myProfile.name;
+            const leavingOrigin = myProfile.origin;
+
+            // 1. Kirim notifikasi keluar & hapus kehadiran dari daftar online semua user
+            publishSystemNotice(`${leavingName} (${leavingOrigin}) meninggalkan obrolan.`);
+            broadcastPresence('offline');
+
+            // 2. Bersihkan data sesi lokal
             delete onlineUsersMap[myPeerId];
             myProfile = null;
             localStorage.removeItem('senpai_mqtt_profile');
+
+            // 3. Kembalikan tampilan ke halaman login
+            document.getElementById('loginNameInput').value = '';
+            document.getElementById('loginOriginInput').value = '';
             recalculateRanksAndUI();
             applyLoginUIState();
+        }
+
+        function publishSystemNotice(text) {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const ts = Date.now();
+            const msgId = `sys_${ts}_${Math.random().toString(36).substr(2, 5)}`;
+
+            const sysMsg = {
+                id: msgId,
+                type: 'system',
+                name: 'System',
+                text: text,
+                time: timeStr,
+                ts: ts
+            };
+
+            addMessageToUI(msgId, sysMsg);
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(getTopicMsg(currentChatDate), JSON.stringify(sysMsg));
+            }
         }
 
         function applyLoginUIState() {
             const loginView = document.getElementById('chatLoginView');
             const roomView = document.getElementById('chatRoomView');
             const badge = document.getElementById('myUserBadge');
-            const logoutBtn = document.getElementById('btnLogoutChat');
+            const leaveBtn = document.getElementById('btnLeaveChat');
 
             if (myProfile) {
                 loginView.classList.add('hidden');
                 roomView.classList.remove('hidden');
                 badge.classList.remove('hidden');
-                logoutBtn.classList.remove('hidden');
+                leaveBtn.classList.remove('hidden');
                 recalculateRanksAndUI();
                 renderAllMessages();
                 setTimeout(() => document.getElementById('chatInput').focus(), 100);
@@ -508,11 +606,10 @@ print("Coding Senpai WSL Backend Active!")`;
                 loginView.classList.remove('hidden');
                 roomView.classList.add('hidden');
                 badge.classList.add('hidden');
-                logoutBtn.classList.add('hidden');
+                leaveBtn.classList.add('hidden');
             }
         }
 
-        // Kirim heartbeat kehadiran setiap 3 detik
         if (myProfile) {
             applyLoginUIState();
             broadcastPresence('online');
@@ -527,7 +624,7 @@ print("Coding Senpai WSL Backend Active!")`;
         });
 
         function addMessageToUI(id, msg) {
-            if (!msg || !msg.text || !msg.name || renderedMsgIds.has(id)) return;
+            if (!msg || !msg.text || renderedMsgIds.has(id)) return;
             renderedMsgIds.add(id);
 
             messageBuffer.push({ id, ...msg });
@@ -535,7 +632,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
             renderAllMessages();
 
-            if (!isChatOpen && msg.peerId !== myPeerId) {
+            if (!isChatOpen && msg.type !== 'system' && msg.peerId !== myPeerId) {
                 document.getElementById('unreadDot').classList.remove('hidden');
             }
         }
@@ -548,6 +645,14 @@ print("Coding Senpai WSL Backend Active!")`;
             }
 
             messageBuffer.forEach(msg => {
+                if (msg.type === 'system') {
+                    const sysEl = document.createElement('div');
+                    sysEl.className = 'text-center my-1';
+                    sysEl.innerHTML = `<span class="bg-slate-800/80 text-slate-400 text-[10px] px-2.5 py-0.5 rounded-full border border-slate-700/60">${escapeHTML(msg.text)} • ${escapeHTML(msg.time || '')}</span>`;
+                    container.appendChild(sysEl);
+                    return;
+                }
+
                 const isMe = msg.peerId === myPeerId;
                 const bubble = document.createElement('div');
                 bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
@@ -612,10 +717,9 @@ print("Coding Senpai WSL Backend Active!")`;
                 ts: ts
             };
 
-            // Tampilkan langsung di layar sendiri & kirim ke semua siswa via MQTT
             addMessageToUI(msgId, msgData);
             if (mqttClient && mqttClient.connected) {
-                mqttClient.publish(TOPIC_MSG, JSON.stringify(msgData));
+                mqttClient.publish(getTopicMsg(currentChatDate), JSON.stringify(msgData));
             }
             broadcastPresence('online');
         }
