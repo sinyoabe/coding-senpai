@@ -7,8 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js"></script>
-    <!-- Gun.js Real-time Multi-Relay Engine -->
+    <!-- Gun.js + WebRTC P2P Direct Mesh -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #editor { width: 100%; height: calc(100vh - 230px); font-size: 15px; }
@@ -154,13 +155,14 @@
                     </div>
 
                     <!-- Chat Input Box -->
-                    <form onsubmit="sendChatMessage(event)" class="p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
+                    <div class="p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
                         <input type="text" id="chatInput" placeholder="Sapa teman sekelas atau gurumu di sini..." autocomplete="off"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
                             class="flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
-                        <button type="submit" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
+                        <button type="button" onclick="sendChatMessage()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
                             <i class="fa-solid fa-paper-plane"></i> Kirim
                         </button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -295,25 +297,20 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // MULTI-RELAY REAL-TIME CLASS CHAT & PRESENCE
+        // REAL-TIME CLASS CHAT (GUN.JS + WEBRTC MESH)
         // ==========================================
-        const gun = Gun({
-            peers: [
-                'https://gun-manhattan.herokuapp.com/gun',
-                'https://relay.peer.ooo/gun',
-                'https://gun-us.herokuapp.com/gun',
-                'https://gun-eu.herokuapp.com/gun'
-            ],
-            localStorage: false // Pastikan selalu sinkron langsung dengan server relay global
-        });
+        const gun = Gun([
+            'https://gun-manhattan.herokuapp.com/gun',
+            'https://relay.peer.ooo/gun',
+            'https://peer.wallie.io/gun',
+            'https://gun-us.herokuapp.com/gun'
+        ]);
 
-        // Gunakan room harian agar pesan kelas hari ini bersih dan super cepat
         const todayKey = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const chatRoom = gun.get(`senpai_sinyoabe_live_chat_${todayKey}`);
-        const presenceNode = gun.get(`senpai_sinyoabe_presence_${todayKey}`);
-        const joinRegistry = gun.get(`senpai_sinyoabe_joins_${todayKey}`);
+        const chatRoom = gun.get(`senpai_sinyoabe_chat_room_${todayKey}`);
+        const presenceNode = gun.get(`senpai_sinyoabe_presence_room_${todayKey}`);
+        const joinRegistry = gun.get(`senpai_sinyoabe_joins_room_${todayKey}`);
 
-        // Deteksi asal perangkat siswa (HP Android, iPhone, Laptop Windows, Mac, Linux)
         function detectDeviceOrigin() {
             const ua = navigator.userAgent;
             if (/Android/i.test(ua)) return "HP Android";
@@ -321,13 +318,13 @@ print("Coding Senpai WSL Backend Active!")`;
             if (/Windows/i.test(ua)) return "Laptop Windows";
             if (/Mac/i.test(ua)) return "MacBook";
             if (/Linux/i.test(ua)) return "Linux";
-            return "Web Browser";
+            return "Browser";
         }
 
         const myDevice = detectDeviceOrigin();
         const myUniquePeerId = 'peer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        let myJoinTimestamp = Number(sessionStorage.getItem('senpai_join_ts')) || Date.now();
-        sessionStorage.setItem('senpai_join_ts', myJoinTimestamp);
+        let myJoinTimestamp = Number(sessionStorage.getItem('senpai_join_ts_v3')) || Date.now();
+        sessionStorage.setItem('senpai_join_ts_v3', myJoinTimestamp);
 
         let myUsername = "User #1";
         let isChatOpen = false;
@@ -336,7 +333,6 @@ print("Coding Senpai WSL Backend Active!")`;
         const activePeers = {};
         const allJoinedPeers = {};
 
-        // Daftarkan waktu masuk ke registry untuk menghitung urutan masuk secara akurat tanpa bentrok
         function registerJoin() {
             joinRegistry.get(myUniquePeerId).put({
                 ts: myJoinTimestamp,
@@ -352,7 +348,6 @@ print("Coding Senpai WSL Backend Active!")`;
 
         function recalculateMyRank() {
             allJoinedPeers[myUniquePeerId] = myJoinTimestamp;
-            // Urutkan semua pengguna berdasarkan waktu masuk paling awal
             const sortedIds = Object.keys(allJoinedPeers).sort((a, b) => allJoinedPeers[a] - allJoinedPeers[b]);
             const myIndex = sortedIds.indexOf(myUniquePeerId);
             const rank = myIndex >= 0 ? myIndex + 1 : 1;
@@ -360,7 +355,6 @@ print("Coding Senpai WSL Backend Active!")`;
             document.getElementById('myUserBadge').textContent = `${myUsername} (${myDevice})`;
         }
 
-        // Kirim sinyal aktif (Heartbeat) setiap 3 detik agar status online super responsif
         function sendHeartbeat() {
             recalculateMyRank();
             presenceNode.get(myUniquePeerId).put({
@@ -381,10 +375,8 @@ print("Coding Senpai WSL Backend Active!")`;
             const now = Date.now();
             const onlineList = [];
 
-            // Tambahkan diri sendiri
             onlineList.push({ id: myUniquePeerId, user: myUsername, device: myDevice, isMe: true });
 
-            // Tambahkan siswa/pengguna lain yang aktif dalam 15 detik terakhir
             Object.keys(activePeers).forEach(id => {
                 if (id !== myUniquePeerId && (now - activePeers[id].lastSeen < 15000)) {
                     onlineList.push({
@@ -412,14 +404,12 @@ print("Coding Senpai WSL Backend Active!")`;
             });
         }
 
-        // Jalankan pendaftaran & heartbeat otomatis sejak web dibuka
         registerJoin();
         sendHeartbeat();
         setInterval(sendHeartbeat, 3000);
         setInterval(updateOnlineUI, 3000);
 
-        // Dengarkan semua pesan masuk dari mana saja secara real-time
-        chatRoom.map().on((msg, id) => {
+        function addMessageToUI(id, msg) {
             if (!msg || !msg.text || !msg.user || renderedMsgIds.has(id)) return;
             renderedMsgIds.add(id);
 
@@ -428,10 +418,13 @@ print("Coding Senpai WSL Backend Active!")`;
 
             renderAllMessages();
 
-            // Nyalakan titik merah notifikasi jika panel chat sedang tertutup
             if (!isChatOpen && msg.peerId !== myUniquePeerId) {
                 document.getElementById('unreadDot').classList.remove('hidden');
             }
+        }
+
+        chatRoom.map().on((msg, id) => {
+            addMessageToUI(id, msg);
         });
 
         function renderAllMessages() {
@@ -482,8 +475,7 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        function sendChatMessage(e) {
-            e.preventDefault();
+        function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text) return;
@@ -494,14 +486,20 @@ print("Coding Senpai WSL Backend Active!")`;
             const ts = Date.now();
             const msgId = `msg_${ts}_${Math.random().toString(36).substr(2, 6)}`;
 
-            chatRoom.get(msgId).put({
+            const msgData = {
                 peerId: myUniquePeerId,
                 user: myUsername,
                 device: myDevice,
                 text: text,
                 time: timeStr,
                 ts: ts
-            });
+            };
+
+            // 1. Tampilkan seketika di layar pengirim (0ms delay)
+            addMessageToUI(msgId, msgData);
+
+            // 2. Siarkan ke seluruh siswa & relay server
+            chatRoom.get(msgId).put(msgData);
             sendHeartbeat();
         }
 
