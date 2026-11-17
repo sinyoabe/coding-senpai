@@ -7,9 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js"></script>
-    <!-- Gun.js + WebRTC P2P Direct Mesh -->
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
+    <!-- MQTT.js Real-time WebSocket Pub/Sub Engine -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #editor { width: 100%; height: calc(100vh - 230px); font-size: 15px; }
@@ -124,7 +123,7 @@
                     <!-- Chat Header -->
                     <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span id="connStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" title="Menghubungkan server..."></span>
                             <h3 class="font-semibold text-sm text-white">Live Class Chat</h3>
                             <span id="onlineCountHeader" class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
                                 0 Online
@@ -157,12 +156,12 @@
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-[11px] text-slate-300 font-medium mb-1">Nama User</label>
-                                    <input type="text" id="loginNameInput" required maxlength="25" placeholder="Contoh: Budi / Pak Guru"
+                                    <input type="text" id="loginNameInput" required maxlength="25" placeholder="Contoh: Willy / Budi"
                                         class="w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Asal (Kelas / Sekolah / Kota)</label>
-                                    <input type="text" id="loginOriginInput" required maxlength="30" placeholder="Contoh: XI RPL 1 / Semarang"
+                                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Asal (Sekolah / Kelas)</label>
+                                    <input type="text" id="loginOriginInput" required maxlength="35" placeholder="Contoh: SDN Sendangmulyo 04"
                                         class="w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
                                 </div>
                             </div>
@@ -333,47 +332,131 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // REAL-TIME CLASS CHAT WITH SIMPLE LOGIN
+        // MQTT REAL-TIME WEBSOCKET CHAT & PRESENCE
         // ==========================================
-        const gun = Gun([
-            'https://gun-manhattan.herokuapp.com/gun',
-            'https://relay.peer.ooo/gun',
-            'https://peer.wallie.io/gun',
-            'https://gun-us.herokuapp.com/gun'
-        ]);
+        const TOPIC_BASE = "sinyoabe/coding-senpai/class-room-v1";
+        const TOPIC_MSG = `${TOPIC_BASE}/messages`;
+        const TOPIC_PRESENCE = `${TOPIC_BASE}/presence`;
 
-        const todayKey = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const chatRoom = gun.get(`senpai_sinyoabe_chat_login_${todayKey}`);
-        const presenceNode = gun.get(`senpai_sinyoabe_presence_login_${todayKey}`);
-        const joinRegistry = gun.get(`senpai_sinyoabe_joins_login_${todayKey}`);
-
-        const myUniquePeerId = 'peer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        let myProfile = JSON.parse(localStorage.getItem('senpai_chat_profile') || 'null');
+        const myPeerId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        let myProfile = JSON.parse(localStorage.getItem('senpai_mqtt_profile') || 'null');
         let isChatOpen = false;
         const renderedMsgIds = new Set();
         const messageBuffer = [];
-        const activePeers = {};
-        const joinOrderMap = {};
+        const onlineUsersMap = {};
 
-        // Pantau urutan masuk semua user yang sudah login
-        joinRegistry.map().on((data, id) => {
-            if (!data || !data.ts) return;
-            joinOrderMap[id] = data.ts;
-            updateUserRankDisplay();
+        // Koneksi ke EMQX Public WSS Broker (Port 8084 SSL)
+        const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+            clientId: 'senpai_' + Math.random().toString(16).substr(2, 8),
+            clean: true,
+            reconnectPeriod: 2000
         });
 
-        function getMyRank() {
-            if (!myProfile) return 1;
-            joinOrderMap[myUniquePeerId] = myProfile.joinedAt;
-            const sortedIds = Object.keys(joinOrderMap).sort((a, b) => joinOrderMap[a] - joinOrderMap[b]);
-            const idx = sortedIds.indexOf(myUniquePeerId);
-            return idx >= 0 ? idx + 1 : 1;
+        mqttClient.on('connect', () => {
+            const dot = document.getElementById('connStatusDot');
+            if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+            
+            mqttClient.subscribe(TOPIC_MSG);
+            mqttClient.subscribe(TOPIC_PRESENCE);
+
+            // Siarkan kehadiran segera setelah terhubung
+            broadcastPresence();
+        });
+
+        mqttClient.on('offline', () => {
+            const dot = document.getElementById('connStatusDot');
+            if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+            try {
+                const data = JSON.parse(payload.toString());
+
+                if (topic === TOPIC_MSG) {
+                    addMessageToUI(data.id, data);
+                } else if (topic === TOPIC_PRESENCE) {
+                    if (data.status === 'offline') {
+                        delete onlineUsersMap[data.peerId];
+                    } else if (data.peerId && data.name) {
+                        onlineUsersMap[data.peerId] = {
+                            ...data,
+                            lastSeen: Date.now()
+                        };
+                    }
+                    recalculateRanksAndUI();
+                }
+            } catch (e) {
+                console.error("MQTT Parse Error:", e);
+            }
+        });
+
+        function broadcastPresence(status = 'online') {
+            if (!myProfile) return;
+            onlineUsersMap[myPeerId] = {
+                peerId: myPeerId,
+                name: myProfile.name,
+                origin: myProfile.origin,
+                joinedAt: myProfile.joinedAt,
+                lastSeen: Date.now(),
+                status: status
+            };
+            recalculateRanksAndUI();
+
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(TOPIC_PRESENCE, JSON.stringify({
+                    peerId: myPeerId,
+                    name: myProfile.name,
+                    origin: myProfile.origin,
+                    joinedAt: myProfile.joinedAt,
+                    status: status
+                }));
+            }
         }
 
-        function updateUserRankDisplay() {
-            if (!myProfile) return;
-            const rank = getMyRank();
-            document.getElementById('myUserBadge').textContent = `#${rank} ${myProfile.name} (${myProfile.origin})`;
+        function recalculateRanksAndUI() {
+            const now = Date.now();
+            const activeList = [];
+
+            // Bersihkan user yang sudah tidak mengirim sinyal > 12 detik
+            Object.keys(onlineUsersMap).forEach(id => {
+                if (now - onlineUsersMap[id].lastSeen > 12000) {
+                    delete onlineUsersMap[id];
+                } else {
+                    activeList.push(onlineUsersMap[id]);
+                }
+            });
+
+            // Urutkan berdasarkan waktu login paling awal
+            activeList.sort((a, b) => a.joinedAt - b.joinedAt);
+
+            // Beri nomor urut #1, #2, #3 dst.
+            activeList.forEach((user, idx) => {
+                user.rank = idx + 1;
+                if (user.peerId === myPeerId && myProfile) {
+                    myProfile.rank = user.rank;
+                    document.getElementById('myUserBadge').textContent = `#${user.rank} ${user.name} (${user.origin})`;
+                }
+            });
+
+            const count = activeList.length;
+            document.getElementById('onlineBadgeNav').textContent = count;
+            document.getElementById('onlineCountHeader').textContent = `${count} Online`;
+
+            const listEl = document.getElementById('onlineUsersList');
+            if (!listEl) return;
+            listEl.innerHTML = '';
+
+            activeList.forEach(u => {
+                const isMe = u.peerId === myPeerId;
+                const badge = document.createElement('span');
+                badge.className = isMe 
+                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap';
+                badge.textContent = isMe 
+                    ? `#${u.rank} ${u.name} (${u.origin}) • Kamu` 
+                    : `#${u.rank} ${u.name} (${u.origin})`;
+                listEl.appendChild(badge);
+            });
         }
 
         function submitChatLogin(e) {
@@ -385,30 +468,25 @@ print("Coding Senpai WSL Backend Active!")`;
             myProfile = {
                 name: nameVal,
                 origin: originVal,
-                joinedAt: Date.now()
+                joinedAt: Date.now(),
+                rank: 1
             };
-            localStorage.setItem('senpai_chat_profile', JSON.stringify(myProfile));
-
-            // Daftarkan urutan masuk ke database P2P
-            joinRegistry.get(myUniquePeerId).put({
-                ts: myProfile.joinedAt,
-                name: myProfile.name,
-                origin: myProfile.origin
-            });
+            localStorage.setItem('senpai_mqtt_profile', JSON.stringify(myProfile));
 
             applyLoginUIState();
-            sendHeartbeat();
+            broadcastPresence('online');
         }
 
         function logoutChat() {
             if (myProfile) {
                 document.getElementById('loginNameInput').value = myProfile.name;
                 document.getElementById('loginOriginInput').value = myProfile.origin;
+                broadcastPresence('offline');
             }
-            // Hapus status online sementara
-            presenceNode.get(myUniquePeerId).put(null);
+            delete onlineUsersMap[myPeerId];
             myProfile = null;
-            localStorage.removeItem('senpai_chat_profile');
+            localStorage.removeItem('senpai_mqtt_profile');
+            recalculateRanksAndUI();
             applyLoginUIState();
         }
 
@@ -423,7 +501,7 @@ print("Coding Senpai WSL Backend Active!")`;
                 roomView.classList.remove('hidden');
                 badge.classList.remove('hidden');
                 logoutBtn.classList.remove('hidden');
-                updateUserRankDisplay();
+                recalculateRanksAndUI();
                 renderAllMessages();
                 setTimeout(() => document.getElementById('chatInput').focus(), 100);
             } else {
@@ -434,84 +512,19 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        function sendHeartbeat() {
-            if (!myProfile) return;
-            const rank = getMyRank();
-            updateUserRankDisplay();
-            presenceNode.get(myUniquePeerId).put({
-                rank: rank,
-                name: myProfile.name,
-                origin: myProfile.origin,
-                lastSeen: Date.now()
-            });
-            updateOnlineUI();
-        }
-
-        presenceNode.map().on((data, id) => {
-            if (!data || !data.name || !data.lastSeen) {
-                delete activePeers[id];
-            } else {
-                activePeers[id] = data;
-            }
-            updateOnlineUI();
-        });
-
-        function updateOnlineUI() {
-            const now = Date.now();
-            const onlineList = [];
-
-            if (myProfile) {
-                onlineList.push({
-                    id: myUniquePeerId,
-                    rank: getMyRank(),
-                    name: myProfile.name,
-                    origin: myProfile.origin,
-                    isMe: true
-                });
-            }
-
-            Object.keys(activePeers).forEach(id => {
-                if (id !== myUniquePeerId && (now - activePeers[id].lastSeen < 15000)) {
-                    onlineList.push({
-                        id: id,
-                        rank: activePeers[id].rank || '?',
-                        name: activePeers[id].name,
-                        origin: activePeers[id].origin,
-                        isMe: false
-                    });
-                }
-            });
-
-            const count = onlineList.length;
-            document.getElementById('onlineBadgeNav').textContent = count;
-            document.getElementById('onlineCountHeader').textContent = `${count} Online`;
-
-            const listEl = document.getElementById('onlineUsersList');
-            listEl.innerHTML = '';
-            onlineList.forEach(item => {
-                const badge = document.createElement('span');
-                badge.className = item.isMe 
-                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap'
-                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap';
-                badge.textContent = item.isMe 
-                    ? `#${item.rank} ${item.name} (${item.origin}) • Kamu` 
-                    : `#${item.rank} ${item.name} (${item.origin})`;
-                listEl.appendChild(badge);
-            });
-        }
-
-        // Jalankan cek sesi login saat halaman dimuat
+        // Kirim heartbeat kehadiran setiap 3 detik
         if (myProfile) {
-            joinRegistry.get(myUniquePeerId).put({
-                ts: myProfile.joinedAt,
-                name: myProfile.name,
-                origin: myProfile.origin
-            });
             applyLoginUIState();
-            sendHeartbeat();
+            broadcastPresence('online');
         }
-        setInterval(sendHeartbeat, 3000);
-        setInterval(updateOnlineUI, 3000);
+        setInterval(() => {
+            if (myProfile) broadcastPresence('online');
+            else recalculateRanksAndUI();
+        }, 3000);
+
+        window.addEventListener('beforeunload', () => {
+            if (myProfile) broadcastPresence('offline');
+        });
 
         function addMessageToUI(id, msg) {
             if (!msg || !msg.text || !msg.name || renderedMsgIds.has(id)) return;
@@ -522,23 +535,20 @@ print("Coding Senpai WSL Backend Active!")`;
 
             renderAllMessages();
 
-            if (!isChatOpen && msg.peerId !== myUniquePeerId) {
+            if (!isChatOpen && msg.peerId !== myPeerId) {
                 document.getElementById('unreadDot').classList.remove('hidden');
             }
         }
 
-        chatRoom.map().on((msg, id) => {
-            addMessageToUI(id, msg);
-        });
-
         function renderAllMessages() {
             const container = document.getElementById('chatMessages');
+            if (!container) return;
             if (messageBuffer.length > 0) {
                 container.innerHTML = '';
             }
 
             messageBuffer.forEach(msg => {
-                const isMe = msg.peerId === myUniquePeerId;
+                const isMe = msg.peerId === myPeerId;
                 const bubble = document.createElement('div');
                 bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
                 const rankPrefix = msg.rank ? `#${msg.rank} ` : '';
@@ -572,7 +582,7 @@ print("Coding Senpai WSL Backend Active!")`;
                 chatPanel.classList.remove('hidden');
                 document.getElementById('unreadDot').classList.add('hidden');
                 applyLoginUIState();
-                if (myProfile) sendHeartbeat();
+                if (myProfile) broadcastPresence('online');
             } else {
                 chatPanel.classList.add('hidden');
                 previewArea.classList.remove('hidden');
@@ -590,11 +600,11 @@ print("Coding Senpai WSL Backend Active!")`;
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const ts = Date.now();
             const msgId = `msg_${ts}_${Math.random().toString(36).substr(2, 6)}`;
-            const rank = getMyRank();
 
             const msgData = {
-                peerId: myUniquePeerId,
-                rank: rank,
+                id: msgId,
+                peerId: myPeerId,
+                rank: myProfile.rank || 1,
                 name: myProfile.name,
                 origin: myProfile.origin,
                 text: text,
@@ -602,9 +612,12 @@ print("Coding Senpai WSL Backend Active!")`;
                 ts: ts
             };
 
+            // Tampilkan langsung di layar sendiri & kirim ke semua siswa via MQTT
             addMessageToUI(msgId, msgData);
-            chatRoom.get(msgId).put(msgData);
-            sendHeartbeat();
+            if (mqttClient && mqttClient.connected) {
+                mqttClient.publish(TOPIC_MSG, JSON.stringify(msgData));
+            }
+            broadcastPresence('online');
         }
 
         function escapeHTML(str) {
