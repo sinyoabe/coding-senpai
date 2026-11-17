@@ -7,13 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js"></script>
+    <!-- Gun.js Real-time P2P Database -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #editor { width: 100%; height: calc(100vh - 230px); font-size: 15px; }
         .phone-frame { width: 375px; height: 700px; border: 12px solid #1e293b; border-radius: 36px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); background: #111827; transition: all 0.3s ease; }
         .tablet-frame { width: 600px; height: 700px; border: 12px solid #1e293b; border-radius: 24px; }
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
-        /* Custom Scrollbar untuk Chat */
         #chatMessages::-webkit-scrollbar { width: 6px; }
         #chatMessages::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     </style>
@@ -45,7 +46,6 @@
         
         <!-- Left Panel: Code Editor & Terminal -->
         <div class="w-1/2 flex flex-col border-r border-slate-800 bg-slate-950">
-            <!-- Editor Toolbar -->
             <div class="bg-slate-900 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
                 <div class="flex items-center gap-2">
                     <button onclick="switchTab('html')" id="tab-html" class="px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer">
@@ -76,7 +76,6 @@
                 </div>
             </div>
 
-            <!-- Ace Code Editor -->
             <div id="editor"></div>
 
             <!-- Terminal Output -->
@@ -101,7 +100,6 @@
                     <button onclick="setDevice('phone')" id="btn-phone" class="bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
                     <button onclick="setDevice('tablet')" id="btn-tablet" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
                     <button onclick="setDevice('full')" id="btn-full" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
-                    <!-- TOMBOL CHAT BARU DI SAMPING FULL SCREEN -->
                     <button onclick="toggleChat()" id="btn-chat" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1 cursor-pointer transition">
                         <i class="fa-solid fa-comments"></i> Chat
                     </button>
@@ -116,7 +114,7 @@
                 </div>
             </div>
 
-            <!-- Panel Public Chat Room (Tersembunyi secara default) -->
+            <!-- Panel Public Chat Room -->
             <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/95 p-4 overflow-hidden">
                 <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
                     <!-- Chat Header -->
@@ -127,7 +125,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <span id="myUserBadge" class="bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
-                                Menghubungkan...
+                                Menyiapkan...
                             </span>
                             <button onclick="toggleChat()" class="text-slate-400 hover:text-white text-xs cursor-pointer">
                                 <i class="fa-solid fa-xmark text-base"></i>
@@ -137,7 +135,7 @@
 
                     <!-- Chat Messages List -->
                     <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
-                        <div class="text-center text-xs text-slate-500 my-2">Memuat riwayat obrolan...</div>
+                        <div id="emptyChatNotice" class="text-center text-xs text-slate-500 my-4">Ruang obrolan aktif. Mulai ketik pesan di bawah!</div>
                     </div>
 
                     <!-- Chat Input Box -->
@@ -155,7 +153,6 @@
     </div>
 
     <script>
-        // Default Starter Code
         const defaultHTML = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -185,13 +182,11 @@ print("Coding Senpai WSL Backend Active!")`;
         let currentTab = 'html';
         let codeStore = { html: defaultHTML, py: defaultPy };
 
-        // Initialize Ace Editor
         const editor = ace.edit("editor");
         editor.setTheme("ace/theme/tomorrow_night_eighties");
         editor.session.setMode("ace/mode/html");
         editor.setValue(defaultHTML, -1);
 
-        // Terminal Helper
         function logTerminal(msg) {
             const term = document.getElementById('terminal');
             const line = document.createElement('div');
@@ -208,7 +203,6 @@ print("Coding Senpai WSL Backend Active!")`;
             document.getElementById('terminal').innerHTML = '';
         }
 
-        // Editor Actions
         function switchTab(tab) {
             codeStore[currentTab] = editor.getValue();
             currentTab = tab;
@@ -258,9 +252,7 @@ print("Coding Senpai WSL Backend Active!")`;
             logTerminal(`[INFO] Code copied to clipboard.`);
         }
 
-        // Device Preview Switcher
         function setDevice(type) {
-            // Tutup panel chat jika sedang terbuka saat memilih mode perangkat
             document.getElementById('chatPanel').classList.add('hidden');
             document.getElementById('previewArea').classList.remove('hidden');
 
@@ -287,12 +279,77 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // FITUR PUBLIC CHAT (URUTAN MASUK OTOMATIS)
+        // FITUR PUBLIC CHAT REAL-TIME (GUN.JS P2P)
         // ==========================================
-        const DB_URL = "https://coding-senpai-chat-default-rtdb.asia-southeast1.firebasedatabase.app";
-        let myUsername = localStorage.getItem('senpai_chat_username');
+        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
+        const chatRoom = gun.get('coding_senpai_sinyoabe_chat_v2');
+        const userCounterNode = gun.get('coding_senpai_sinyoabe_counter_v2');
+        
+        let myUsername = localStorage.getItem('senpai_chat_username_v2');
         let isChatOpen = false;
-        let chatPollingInterval = null;
+        const renderedMsgIds = new Set();
+
+        // Bersihkan cache lama yang rusak ([object Object])
+        if (localStorage.getItem('senpai_chat_username')) {
+            localStorage.removeItem('senpai_chat_username');
+        }
+
+        function initUserIdentity() {
+            if (myUsername && !myUsername.includes('object')) {
+                document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+                return;
+            }
+
+            let assigned = false;
+            userCounterNode.once((data) => {
+                if (assigned) return;
+                assigned = true;
+                const currentCount = (data && typeof data.count === 'number') ? data.count : 0;
+                const nextNum = currentCount + 1;
+                userCounterNode.put({ count: nextNum });
+                myUsername = `User #${nextNum}`;
+                localStorage.setItem('senpai_chat_username_v2', myUsername);
+                document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+            });
+
+            // Fallback cepat jika relay P2P butuh waktu merespons
+            setTimeout(() => {
+                if (!assigned) {
+                    assigned = true;
+                    myUsername = `User #1`;
+                    userCounterNode.put({ count: 1 });
+                    localStorage.setItem('senpai_chat_username_v2', myUsername);
+                    document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
+                }
+            }, 1200);
+        }
+
+        // Dengarkan pesan masuk secara real-time
+        chatRoom.map().on((msg, id) => {
+            if (!msg || !msg.text || !msg.user || renderedMsgIds.has(id)) return;
+            renderedMsgIds.add(id);
+
+            const notice = document.getElementById('emptyChatNotice');
+            if (notice) notice.remove();
+
+            const container = document.getElementById('chatMessages');
+            const isMe = msg.user === myUsername;
+            const bubble = document.createElement('div');
+            bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+            
+            bubble.innerHTML = `
+                <span class="text-[11px] text-slate-400 mb-1 px-1">${escapeHTML(msg.user)} • ${escapeHTML(msg.time || '')}</span>
+                <div class="px-3.5 py-2 rounded-2xl max-w-[80%] break-words text-xs ${
+                    isMe 
+                    ? 'bg-sky-600 text-white rounded-br-none' 
+                    : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
+                }">
+                    ${escapeHTML(msg.text)}
+                </div>
+            `;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        });
 
         function toggleChat() {
             isChatOpen = !isChatOpen;
@@ -302,86 +359,15 @@ print("Coding Senpai WSL Backend Active!")`;
             if (isChatOpen) {
                 previewArea.classList.add('hidden');
                 chatPanel.classList.remove('hidden');
-                initChatSession();
+                initUserIdentity();
+                document.getElementById('chatInput').focus();
             } else {
                 chatPanel.classList.add('hidden');
                 previewArea.classList.remove('hidden');
-                if (chatPollingInterval) clearInterval(chatPollingInterval);
             }
         }
 
-        async function initChatSession() {
-            // Jika user belum punya nomor urut, daftarkan berdasarkan urutan masuk ke server
-            if (!myUsername) {
-                try {
-                    const countRes = await fetch(`${DB_URL}/user_counter.json`);
-                    let currentCount = await countRes.json();
-                    let nextNumber = (currentCount || 0) + 1;
-
-                    // Update counter di database
-                    await fetch(`${DB_URL}/user_counter.json`, {
-                        method: 'PUT',
-                        body: JSON.stringify(nextNumber)
-                    });
-
-                    myUsername = `User #${nextNumber}`;
-                    localStorage.setItem('senpai_chat_username', myUsername);
-                } catch (e) {
-                    // Fallback jika offline/blokir jaringan
-                    const randomNum = Math.floor(100 + Math.random() * 900);
-                    myUsername = `User #${randomNum}`;
-                }
-            }
-
-            document.getElementById('myUserBadge').textContent = `Kamu: ${myUsername}`;
-            fetchMessages();
-
-            // Refresh pesan otomatis setiap 2 detik
-            if (chatPollingInterval) clearInterval(chatPollingInterval);
-            chatPollingInterval = setInterval(fetchMessages, 2000);
-        }
-
-        async function fetchMessages() {
-            try {
-                const res = await fetch(`${DB_URL}/messages.json?orderBy="$key"&limitToLast=50`);
-                const data = await res.json();
-                const container = document.getElementById('chatMessages');
-                
-                if (!data) {
-                    container.innerHTML = `<div class="text-center text-xs text-slate-500 my-4">Belum ada pesan. Jadilah yang pertama menyapa!</div>`;
-                    return;
-                }
-
-                const isAtBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
-                container.innerHTML = '';
-
-                Object.values(data).forEach(msg => {
-                    const isMe = msg.user === myUsername;
-                    const bubble = document.createElement('div');
-                    bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-                    
-                    bubble.innerHTML = `
-                        <span class="text-[11px] text-slate-400 mb-1 px-1">${msg.user} • ${msg.time || ''}</span>
-                        <div class="px-3.5 py-2 rounded-2xl max-w-[80%] break-words text-xs ${
-                            isMe 
-                            ? 'bg-sky-600 text-white rounded-br-none' 
-                            : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
-                        }">
-                            ${escapeHTML(msg.text)}
-                        </div>
-                    `;
-                    container.appendChild(bubble);
-                });
-
-                if (isAtBottom) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            } catch (err) {
-                console.error("Gagal memuat pesan:", err);
-            }
-        }
-
-        async function sendChatMessage(e) {
+        function sendChatMessage(e) {
             e.preventDefault();
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
@@ -390,24 +376,17 @@ print("Coding Senpai WSL Backend Active!")`;
             input.value = '';
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const msgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-            try {
-                await fetch(`${DB_URL}/messages.json`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        user: myUsername || 'User',
-                        text: text,
-                        time: timeStr
-                    })
-                });
-                fetchMessages();
-            } catch (err) {
-                logTerminal(`[ERROR] Gagal mengirim pesan chat.`);
-            }
+            chatRoom.get(msgId).put({
+                user: myUsername || 'User #1',
+                text: text,
+                time: timeStr
+            });
         }
 
         function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({
+            return String(str).replace(/[&<>'"]/g, tag => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
             }[tag]));
         }
@@ -494,7 +473,6 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        // Initial Render
         runCode();
     </script>
 </body>
