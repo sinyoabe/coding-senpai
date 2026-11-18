@@ -66,7 +66,25 @@
         }
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
         
-        #chatMessages::-webkit-scrollbar { width: 6px; }
+        /* Floating Draggable Chat Phone Frame */
+        .floating-chat-phone {
+            width: 335px;
+            height: 550px;
+            border: 10px solid var(--phone-bezel);
+            outline: 2px solid var(--phone-ring);
+            border-radius: 34px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 25px var(--accent-glow);
+            background-color: var(--bg-panel);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+        .floating-chat-phone input, .floating-chat-phone #chatMessages {
+            user-select: text;
+        }
+
+        #chatMessages::-webkit-scrollbar { width: 5px; }
         #chatMessages::-webkit-scrollbar-thumb { background: var(--phone-ring); border-radius: 3px; }
         
         /* Animasi Navbar (Made with Love, Quotes Fade, Export Arrow) */
@@ -177,7 +195,7 @@
             </div>
         </div>
 
-        <!-- Right Panel: Live Device Preview & Chat -->
+        <!-- Right Panel: Live Device Preview (Bersih tanpa tombol chat) -->
         <div class="w-1/2 flex flex-col bg-slate-900/30 relative">
             <div class="theme-toolbar bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
                 <span class="text-slate-400 font-medium"><i class="fa-solid fa-mobile-screen mr-1"></i> Live Device Preview</span>
@@ -185,11 +203,6 @@
                     <button onclick="setDevice('phone')" id="btn-phone" class="theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
                     <button onclick="setDevice('tablet')" id="btn-tablet" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
                     <button onclick="setDevice('full')" id="btn-full" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
-                    <button onclick="toggleChat()" id="btn-chat" class="theme-btn-secondary bg-sky-600 hover:opacity-90 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1.5 cursor-pointer transition relative">
-                        <i class="fa-solid fa-comments"></i> Chat
-                        <span id="onlineBadgeNav" class="bg-emerald-400 text-slate-950 font-bold text-[10px] px-1.5 rounded-full">0</span>
-                        <span id="unreadDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping"></span>
-                    </button>
                 </div>
                 <span id="deviceLabel" class="text-slate-500 hidden xl:inline">iPhone 15 Pro (375px x 700px)</span>
             </div>
@@ -200,99 +213,122 @@
                     <iframe id="previewFrame" class="w-full h-full border-none bg-white"></iframe>
                 </div>
             </div>
+        </div>
 
-            <!-- Panel Public Chat Room -->
-            <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/90 p-4 overflow-hidden">
-                <div class="theme-panel theme-border bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl relative">
-                    
-                    <!-- Chat Header -->
-                    <div class="theme-toolbar bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span id="connStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" title="Menghubungkan server..."></span>
-                            <h3 class="font-semibold text-sm text-white">Live Class Chat</h3>
-                            <span id="onlineCountHeader" class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
-                                0 Online
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-1.5 overflow-hidden">
-                            <span id="myUserBadge" class="hidden bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-mono truncate max-w-[160px]">
-                                -
-                            </span>
-                            <button id="btnLeaveChat" onclick="leaveChat()" title="Keluar / Logout dari Chat" class="hidden bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white text-xs px-2 py-0.5 rounded border border-rose-500/40 cursor-pointer transition flex items-center gap-1 shrink-0">
-                                <i class="fa-solid fa-right-from-bracket"></i> Leave
-                            </button>
-                            <button onclick="toggleChat()" title="Tutup Panel Chat" class="text-slate-400 hover:text-white text-xs cursor-pointer ml-1 shrink-0">
-                                <i class="fa-solid fa-xmark text-base"></i>
-                            </button>
-                        </div>
-                    </div>
+    </div>
 
-                    <!-- Form Login Simple -->
-                    <div id="chatLoginView" class="flex-1 flex items-center justify-center p-6 bg-slate-900/80">
-                        <form onsubmit="submitChatLogin(event)" class="theme-panel theme-border w-full max-w-xs bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
-                            <div class="text-center space-y-1">
-                                <div class="w-10 h-10 bg-sky-600/20 border border-sky-500/40 text-sky-400 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <i class="fa-solid fa-user-check"></i>
-                                </div>
-                                <h4 class="text-sm font-bold text-white">Gabung Ruang Obrolan</h4>
-                                <p class="text-[11px] text-slate-400">Isi nama dan asalmu sebelum mulai chat</p>
-                            </div>
+    <!-- ===================================================================== -->
+    <!-- TOMBOL FLOATING MIRIP WHATSAPP DI POJOK KANAN BAWAH                   -->
+    <!-- ===================================================================== -->
+    <button id="waFloatingBtn" onclick="toggleChat()" title="Buka Live Class Chat"
+        class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer border-2 border-white/20">
+        <i class="fa-brands fa-whatsapp text-3xl"></i>
+        <!-- Badge Jumlah Online -->
+        <span id="onlineBadgeNav" class="absolute -top-1 -left-1 bg-slate-900 text-emerald-400 border border-emerald-500/60 font-bold text-[10px] px-1.5 py-0.5 rounded-full shadow">0</span>
+        <!-- Titik Merah Pesan Baru -->
+        <span id="unreadDot" class="hidden absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full animate-ping"></span>
+    </button>
 
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Nama User</label>
-                                    <input type="text" id="loginNameInput" required maxlength="25" placeholder="Contoh: Willy / Budi"
-                                        class="theme-surface theme-border w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Asal (Sekolah / Kelas)</label>
-                                    <input type="text" id="loginOriginInput" required maxlength="35" placeholder="Contoh: SDN Sendangmulyo 04"
-                                        class="theme-surface theme-border w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="theme-btn-secondary w-full bg-sky-600 hover:opacity-90 text-white font-semibold text-xs py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5">
-                                <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Chat
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Area Ruang Chat Utama -->
-                    <div id="chatRoomView" class="hidden flex-1 flex flex-col overflow-hidden">
-                        <!-- Bar Daftar User Online -->
-                        <div class="theme-panel theme-border bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
-                            <span class="text-slate-400 whitespace-nowrap font-medium"><i class="fa-solid fa-users text-sky-400 mr-1"></i> Online:</span>
-                            <div id="onlineUsersList" class="flex items-center gap-1.5"></div>
-                        </div>
-
-                        <!-- Info Auto Reset 12 Malam -->
-                        <div class="theme-toolbar bg-slate-900/60 px-4 py-1 border-b border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
-                            <span><i class="fa-regular fa-clock mr-1"></i> Riwayat chat otomatis di-reset setiap pukul 00:00 (12 malam)</span>
-                            <span id="chatDateBadge" class="font-mono text-slate-400"></span>
-                        </div>
-
-                        <!-- Chat Messages List -->
-                        <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
-                            <div id="emptyChatNotice" class="text-center text-xs text-slate-500 my-4">
-                                Ruang obrolan kelas aktif. Silakan saling menyapa secara real-time!
-                            </div>
-                        </div>
-
-                        <!-- Chat Input Box -->
-                        <div class="theme-toolbar p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
-                            <input type="text" id="chatInput" placeholder="Ketik pesan ke teman atau gurumu..." autocomplete="off"
-                                onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
-                                class="theme-surface theme-border flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
-                            <button type="button" onclick="sendChatMessage()" class="theme-btn-secondary bg-sky-600 hover:opacity-90 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
-                                <i class="fa-solid fa-paper-plane"></i> Kirim
-                            </button>
-                        </div>
-                    </div>
-
+    <!-- ===================================================================== -->
+    <!-- MODAL LOGIN MELAYANG SIMPLE (MUNCUL SAAT KLIK LOGO WA JIKA BELUM LOGIN) -->
+    <!-- ===================================================================== -->
+    <div id="chatLoginModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <form onsubmit="submitChatLogin(event)" class="theme-panel theme-border w-full max-w-xs bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 relative animate-[fadeIn_0.2s_ease-out]">
+            <button type="button" onclick="closeLoginModal()" class="absolute top-3.5 right-3.5 text-slate-400 hover:text-white cursor-pointer">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+            <div class="text-center space-y-1">
+                <div class="w-11 h-11 bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fa-brands fa-whatsapp text-2xl"></i>
                 </div>
+                <h4 class="text-sm font-bold text-white">Gabung Live Class Chat</h4>
+                <p class="text-[11px] text-slate-400">Isi nama dan asalmu sebelum mulai chat</p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Nama User</label>
+                    <input type="text" id="loginNameInput" required maxlength="25" placeholder="Contoh: Willy / Budi"
+                        class="theme-surface theme-border w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-[#25D366] outline-none">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-300 font-medium mb-1">Asal (Sekolah / Kelas)</label>
+                    <input type="text" id="loginOriginInput" required maxlength="35" placeholder="Contoh: SDN Sendangmulyo 04"
+                        class="theme-surface theme-border w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-[#25D366] outline-none">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-bold text-xs py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg">
+                <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Chat
+            </button>
+        </form>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- HAPE MELAYANG YANG BISA DI-DRAG KE MANA-MANA (SETELAH LOGIN)          -->
+    <!-- ===================================================================== -->
+    <div id="floatingPhoneChat" class="hidden fixed bottom-22 right-6 z-50 floating-chat-phone">
+        
+        <!-- Notch & Drag Handle Bar (Seret bagian ini untuk memindahkan HP) -->
+        <div id="phoneDragHandle" title="Klik & seret untuk memindahkan posisi HP"
+            class="theme-toolbar bg-slate-900 px-3.5 py-2 border-b border-slate-800 flex items-center justify-between cursor-move relative">
+            <div class="flex items-center gap-1.5">
+                <span id="connStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span class="text-[11px] font-bold text-white tracking-wide">ClassChat</span>
+                <span id="onlineCountHeader" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded-full font-semibold">
+                    0 Online
+                </span>
+            </div>
+
+            <!-- Speaker Notch -->
+            <div class="w-14 h-2.5 bg-black/70 rounded-full border border-slate-700/60 hidden sm:block"></div>
+
+            <div class="flex items-center gap-1.5">
+                <button id="btnLeaveChat" onclick="leaveChat()" title="Leave / Logout"
+                    class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white text-[10px] px-1.5 py-0.5 rounded border border-rose-500/40 cursor-pointer transition flex items-center gap-1">
+                    <i class="fa-solid fa-right-from-bracket"></i> Leave
+                </button>
+                <button onclick="minimizePhoneChat()" title="Sembunyikan ke tombol WA"
+                    class="text-slate-400 hover:text-white px-1 cursor-pointer">
+                    <i class="fa-solid fa-minus text-xs"></i>
+                </button>
             </div>
         </div>
 
+        <!-- Sub-header Identitas User & Daftar Online -->
+        <div class="theme-panel bg-slate-950/90 px-3 py-1.5 border-b theme-border space-y-1">
+            <div class="flex items-center justify-between text-[10px]">
+                <span id="myUserBadge" class="text-indigo-300 font-mono truncate max-w-[200px]">-</span>
+                <span id="chatDateBadge" class="font-mono text-slate-500"></span>
+            </div>
+            <div class="flex items-center gap-1.5 overflow-x-auto text-[10px] pb-0.5">
+                <span class="text-slate-400 whitespace-nowrap"><i class="fa-solid fa-users text-[#25D366]"></i></span>
+                <div id="onlineUsersList" class="flex items-center gap-1"></div>
+            </div>
+        </div>
+
+        <!-- Area Pesan Chat -->
+        <div id="chatMessages" class="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs bg-slate-950/60">
+            <div id="emptyChatNotice" class="text-center text-[11px] text-slate-500 my-6">
+                Ruang obrolan kelas aktif.<br>Seret bagian atas HP ini untuk memindah posisinya!
+            </div>
+        </div>
+
+        <!-- Input Chat Bawah -->
+        <div class="theme-toolbar p-2.5 bg-slate-900 border-t border-slate-800 flex gap-1.5 items-center">
+            <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off"
+                onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
+                class="theme-surface theme-border flex-1 bg-slate-800 text-white text-xs rounded-full px-3.5 py-2 border border-slate-700 focus:border-[#25D366] outline-none">
+            <button type="button" onclick="sendChatMessage()"
+                class="w-8 h-8 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 flex items-center justify-center cursor-pointer transition shrink-0 shadow">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Home Indicator Bar Bawah HP -->
+        <div class="theme-toolbar bg-slate-900 py-1.5 flex justify-center">
+            <div class="w-24 h-1 bg-slate-600 rounded-full"></div>
+        </div>
     </div>
 
     <script>
@@ -461,7 +497,6 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        // Terapkan tema tersimpan saat web dimuat
         const savedTheme = localStorage.getItem('senpai_ide_theme') || 'midnight';
         applyTheme(savedTheme, true);
 
@@ -531,10 +566,6 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         function setDevice(type) {
-            isChatOpen = false;
-            document.getElementById('chatPanel').classList.add('hidden');
-            document.getElementById('previewArea').classList.remove('hidden');
-
             const container = document.getElementById('previewContainer');
             const label = document.getElementById('deviceLabel');
             
@@ -556,6 +587,71 @@ print("Coding Senpai WSL Backend Active!")`;
                 document.getElementById('btn-full').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             }
         }
+
+        // ==========================================
+        // DRAGGABLE FLOATING PHONE LOGIC (MOUSE & TOUCH)
+        // ==========================================
+        (function initDraggablePhone() {
+            const phoneEl = document.getElementById('floatingPhoneChat');
+            const handleEl = document.getElementById('phoneDragHandle');
+            let isDragging = false;
+            let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+            function onStart(clientX, clientY) {
+                isDragging = true;
+                const rect = phoneEl.getBoundingClientRect();
+                // Konversi dari posisi bottom/right ke top/left agar bebas diseret ke mana saja
+                phoneEl.style.bottom = 'auto';
+                phoneEl.style.right = 'auto';
+                phoneEl.style.left = rect.left + 'px';
+                phoneEl.style.top = rect.top + 'px';
+
+                startX = clientX;
+                startY = clientY;
+                initialLeft = rect.left;
+                initialTop = rect.top;
+            }
+
+            function onMove(clientX, clientY) {
+                if (!isDragging) return;
+                let newLeft = initialLeft + (clientX - startX);
+                let newTop = initialTop + (clientY - startY);
+
+                // Batasi agar HP tidak keluar layar browser
+                const maxLeft = window.innerWidth - phoneEl.offsetWidth;
+                const maxTop = window.innerHeight - phoneEl.offsetHeight;
+                newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                newTop = Math.max(0, Math.min(newTop, maxTop));
+
+                phoneEl.style.left = newLeft + 'px';
+                phoneEl.style.top = newTop + 'px';
+            }
+
+            function onEnd() {
+                isDragging = false;
+            }
+
+            // Mouse Events
+            handleEl.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button')) return;
+                onStart(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', onEnd);
+
+            // Touch Events (untuk HP / Layar Sentuh)
+            handleEl.addEventListener('touchstart', (e) => {
+                if (e.target.closest('button')) return;
+                const touch = e.touches[0];
+                onStart(touch.clientX, touch.clientY);
+            }, { passive: true });
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const touch = e.touches[0];
+                onMove(touch.clientX, touch.clientY);
+            }, { passive: true });
+            window.addEventListener('touchend', onEnd);
+        })();
 
         // ==========================================
         // MQTT REAL-TIME CHAT + LEAVE + MIDNIGHT CLEAR
@@ -580,7 +676,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
         const myPeerId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         let myProfile = JSON.parse(localStorage.getItem('senpai_mqtt_profile') || 'null');
-        let isChatOpen = false;
+        let isPhoneOpen = false;
         const renderedMsgIds = new Set();
         const messageBuffer = [];
         const onlineUsersMap = {};
@@ -598,7 +694,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
         mqttClient.on('connect', () => {
             const dot = document.getElementById('connStatusDot');
-            if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
             
             mqttClient.subscribe(getTopicMsg(currentChatDate));
             mqttClient.subscribe(getTopicPresence(currentChatDate));
@@ -608,7 +704,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
         mqttClient.on('offline', () => {
             const dot = document.getElementById('connStatusDot');
-            if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-rose-500';
         });
 
         mqttClient.on('message', (topic, payload) => {
@@ -654,7 +750,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
                 const container = document.getElementById('chatMessages');
                 if (container) {
-                    container.innerHTML = `<div id="emptyChatNotice" class="text-center text-xs text-slate-500 my-4">Hari baru (${currentChatDate}). Riwayat chat telah dibersihkan otomatis!</div>`;
+                    container.innerHTML = `<div id="emptyChatNotice" class="text-center text-[11px] text-slate-500 my-6">Hari baru (${currentChatDate}). Riwayat chat telah dibersihkan otomatis!</div>`;
                 }
 
                 if (myProfile) {
@@ -724,7 +820,7 @@ print("Coding Senpai WSL Backend Active!")`;
             listEl.innerHTML = '';
 
             if (activeList.length === 0) {
-                listEl.innerHTML = '<span class="text-slate-500 text-[11px]">Belum ada yang aktif</span>';
+                listEl.innerHTML = '<span class="text-slate-500 text-[10px]">Kosong</span>';
                 return;
             }
 
@@ -732,13 +828,45 @@ print("Coding Senpai WSL Backend Active!")`;
                 const isMe = u.peerId === myPeerId;
                 const badge = document.createElement('span');
                 badge.className = isMe 
-                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap'
-                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-mono whitespace-nowrap';
+                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-1.5 py-0.2 rounded text-[10px] font-mono whitespace-nowrap'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded text-[10px] font-mono whitespace-nowrap';
                 badge.textContent = isMe 
-                    ? `#${u.rank} ${u.name} (${u.origin}) • Kamu` 
-                    : `#${u.rank} ${u.name} (${u.origin})`;
+                    ? `#${u.rank} ${u.name} (Kamu)` 
+                    : `#${u.rank} ${u.name}`;
                 listEl.appendChild(badge);
             });
+        }
+
+        // Klik tombol logo WhatsApp di pojok kanan bawah
+        function toggleChat() {
+            if (!myProfile) {
+                // Jika belum login, munculkan modal login melayang yang simpel
+                document.getElementById('chatLoginModal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('loginNameInput').focus(), 100);
+                return;
+            }
+
+            // Jika sudah login, tampilkan / sembunyikan Hape Chat melayang
+            isPhoneOpen = !isPhoneOpen;
+            const phoneChat = document.getElementById('floatingPhoneChat');
+            if (isPhoneOpen) {
+                phoneChat.classList.remove('hidden');
+                document.getElementById('unreadDot').classList.add('hidden');
+                renderAllMessages();
+                broadcastPresence('online');
+                setTimeout(() => document.getElementById('chatInput').focus(), 100);
+            } else {
+                phoneChat.classList.add('hidden');
+            }
+        }
+
+        function closeLoginModal() {
+            document.getElementById('chatLoginModal').classList.add('hidden');
+        }
+
+        function minimizePhoneChat() {
+            isPhoneOpen = false;
+            document.getElementById('floatingPhoneChat').classList.add('hidden');
         }
 
         function submitChatLogin(e) {
@@ -756,9 +884,16 @@ print("Coding Senpai WSL Backend Active!")`;
             };
             localStorage.setItem('senpai_mqtt_profile', JSON.stringify(myProfile));
 
-            applyLoginUIState();
+            // Tutup modal login & langsung buka Hape Chat melayang
+            closeLoginModal();
+            isPhoneOpen = true;
+            document.getElementById('floatingPhoneChat').classList.remove('hidden');
+            document.getElementById('unreadDot').classList.add('hidden');
+
             broadcastPresence('online');
-            publishSystemNotice(`${nameVal} (${originVal}) bergabung ke obrolan.`);
+            publishSystemNotice(`${nameVal} (${originVal}) bergabung.`);
+            renderAllMessages();
+            setTimeout(() => document.getElementById('chatInput').focus(), 100);
         }
 
         function leaveChat() {
@@ -766,7 +901,7 @@ print("Coding Senpai WSL Backend Active!")`;
             const leavingName = myProfile.name;
             const leavingOrigin = myProfile.origin;
 
-            publishSystemNotice(`${leavingName} (${leavingOrigin}) meninggalkan obrolan.`);
+            publishSystemNotice(`${leavingName} (${leavingOrigin}) keluar.`);
             broadcastPresence('offline');
 
             delete onlineUsersMap[myPeerId];
@@ -776,7 +911,11 @@ print("Coding Senpai WSL Backend Active!")`;
             document.getElementById('loginNameInput').value = '';
             document.getElementById('loginOriginInput').value = '';
             recalculateRanksAndUI();
-            applyLoginUIState();
+
+            // Tutup HP melayang & kembalikan ke modal login
+            isPhoneOpen = false;
+            document.getElementById('floatingPhoneChat').classList.add('hidden');
+            document.getElementById('chatLoginModal').classList.remove('hidden');
         }
 
         function publishSystemNotice(text) {
@@ -800,30 +939,8 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        function applyLoginUIState() {
-            const loginView = document.getElementById('chatLoginView');
-            const roomView = document.getElementById('chatRoomView');
-            const badge = document.getElementById('myUserBadge');
-            const leaveBtn = document.getElementById('btnLeaveChat');
-
-            if (myProfile) {
-                loginView.classList.add('hidden');
-                roomView.classList.remove('hidden');
-                badge.classList.remove('hidden');
-                leaveBtn.classList.remove('hidden');
-                recalculateRanksAndUI();
-                renderAllMessages();
-                setTimeout(() => document.getElementById('chatInput').focus(), 100);
-            } else {
-                loginView.classList.remove('hidden');
-                roomView.classList.add('hidden');
-                badge.classList.add('hidden');
-                leaveBtn.classList.add('hidden');
-            }
-        }
-
+        // Jika sebelumnya sudah login, langsung siarkan kehadiran di latar belakang
         if (myProfile) {
-            applyLoginUIState();
             broadcastPresence('online');
         }
         setInterval(() => {
@@ -844,7 +961,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
             renderAllMessages();
 
-            if (!isChatOpen && msg.type !== 'system' && msg.peerId !== myPeerId) {
+            if (!isPhoneOpen && msg.type !== 'system' && msg.peerId !== myPeerId) {
                 document.getElementById('unreadDot').classList.remove('hidden');
             }
         }
@@ -860,7 +977,7 @@ print("Coding Senpai WSL Backend Active!")`;
                 if (msg.type === 'system') {
                     const sysEl = document.createElement('div');
                     sysEl.className = 'text-center my-1';
-                    sysEl.innerHTML = `<span class="bg-slate-800/80 text-slate-400 text-[10px] px-2.5 py-0.5 rounded-full border border-slate-700/60">${escapeHTML(msg.text)} • ${escapeHTML(msg.time || '')}</span>`;
+                    sysEl.innerHTML = `<span class="bg-slate-800/80 text-slate-400 text-[10px] px-2 py-0.5 rounded-full border border-slate-700/60">${escapeHTML(msg.text)} • ${escapeHTML(msg.time || '')}</span>`;
                     container.appendChild(sysEl);
                     return;
                 }
@@ -872,12 +989,12 @@ print("Coding Senpai WSL Backend Active!")`;
                 const originTag = msg.origin ? ` (${escapeHTML(msg.origin)})` : '';
                 
                 bubble.innerHTML = `
-                    <span class="text-[11px] text-slate-400 mb-1 px-1">
-                        <strong class="${isMe ? 'text-sky-400' : 'text-emerald-400'}">${rankPrefix}${escapeHTML(msg.name)}</strong>${originTag} • ${escapeHTML(msg.time || '')}
+                    <span class="text-[10px] text-slate-400 mb-0.5 px-1">
+                        <strong class="${isMe ? 'text-[#25D366]' : 'text-sky-400'}">${rankPrefix}${escapeHTML(msg.name)}</strong>${originTag} • ${escapeHTML(msg.time || '')}
                     </span>
-                    <div class="px-3.5 py-2 rounded-2xl max-w-[82%] break-words text-xs shadow ${
+                    <div class="px-3 py-1.5 rounded-2xl max-w-[85%] break-words text-xs shadow ${
                         isMe 
-                        ? 'theme-btn-secondary bg-sky-600 text-white rounded-br-none' 
+                        ? 'bg-[#005c4b] text-white rounded-br-none border border-emerald-700/40' 
                         : 'theme-surface bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'
                     }">
                         ${escapeHTML(msg.text)}
@@ -887,23 +1004,6 @@ print("Coding Senpai WSL Backend Active!")`;
             });
 
             container.scrollTop = container.scrollHeight;
-        }
-
-        function toggleChat() {
-            isChatOpen = !isChatOpen;
-            const chatPanel = document.getElementById('chatPanel');
-            const previewArea = document.getElementById('previewArea');
-
-            if (isChatOpen) {
-                previewArea.classList.add('hidden');
-                chatPanel.classList.remove('hidden');
-                document.getElementById('unreadDot').classList.add('hidden');
-                applyLoginUIState();
-                if (myProfile) broadcastPresence('online');
-            } else {
-                chatPanel.classList.add('hidden');
-                previewArea.classList.remove('hidden');
-            }
         }
 
         function sendChatMessage() {
