@@ -10,13 +10,64 @@
     <!-- MQTT.js Real-time WebSocket Pub/Sub Engine -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        :root {
+            --bg-main: #0f172a;
+            --bg-header: #0f172a;
+            --bg-panel: #020617;
+            --bg-surface: #1e293b;
+            --border-color: #1e293b;
+            --accent-primary: #4f46e5;
+            --accent-secondary: #0284c7;
+            --accent-glow: rgba(79, 70, 229, 0.35);
+            --phone-bezel: #1e293b;
+            --phone-ring: #334155;
+            --text-accent: #38bdf8;
+        }
+
+        body { 
+            background-color: var(--bg-main); 
+            color: #f8fafc; 
+            font-family: 'Segoe UI', sans-serif; 
+            overflow: hidden; 
+            transition: background-color 0.3s ease;
+        }
+
+        /* Dynamic Theme Overrides */
+        .theme-header { background-color: var(--bg-header) !important; border-color: var(--border-color) !important; transition: all 0.3s ease; }
+        .theme-panel { background-color: var(--bg-panel) !important; border-color: var(--border-color) !important; transition: all 0.3s ease; }
+        .theme-toolbar { background-color: var(--bg-header) !important; border-color: var(--border-color) !important; transition: all 0.3s ease; }
+        .theme-border { border-color: var(--border-color) !important; transition: border-color 0.3s ease; }
+        .theme-brand { background-color: var(--accent-primary) !important; box-shadow: 0 0 12px var(--accent-glow); transition: all 0.3s ease; }
+        .theme-btn-accent { background-color: var(--accent-primary) !important; transition: all 0.3s ease; }
+        .theme-btn-secondary { background-color: var(--accent-secondary) !important; transition: all 0.3s ease; }
+        .theme-surface { background-color: var(--bg-surface) !important; border-color: var(--border-color) !important; }
+
         #editor { width: 100%; height: calc(100vh - 230px); font-size: 15px; }
-        .phone-frame { width: 375px; height: 700px; border: 12px solid #1e293b; border-radius: 36px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); background: #111827; transition: all 0.3s ease; }
-        .tablet-frame { width: 600px; height: 700px; border: 12px solid #1e293b; border-radius: 24px; }
+        
+        .phone-frame { 
+            width: 375px; 
+            height: 700px; 
+            border: 12px solid var(--phone-bezel); 
+            outline: 2px solid var(--phone-ring);
+            border-radius: 36px; 
+            overflow: hidden; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 25px var(--accent-glow); 
+            background: #111827; 
+            transition: all 0.35s ease; 
+        }
+        .tablet-frame { 
+            width: 600px; 
+            height: 700px; 
+            border: 12px solid var(--phone-bezel); 
+            outline: 2px solid var(--phone-ring);
+            border-radius: 24px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 25px var(--accent-glow);
+            transition: all 0.35s ease;
+        }
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
+        
         #chatMessages::-webkit-scrollbar { width: 6px; }
-        #chatMessages::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        #chatMessages::-webkit-scrollbar-thumb { background: var(--phone-ring); border-radius: 3px; }
         
         /* Animasi Navbar (Made with Love, Quotes Fade, Export Arrow) */
         @keyframes heartbeat {
@@ -27,7 +78,7 @@
 
         @keyframes exportSlide {
             0%, 100% { transform: translateX(0); opacity: 0.65; }
-            50% { transform: translateX(4px); opacity: 1; color: #38bdf8; }
+            50% { transform: translateX(4px); opacity: 1; color: var(--text-accent); }
         }
         .animate-export { display: inline-flex; align-items: center; gap: 4px; animation: exportSlide 1.6s infinite ease-in-out; }
 
@@ -37,19 +88,33 @@
 <body class="flex flex-col h-screen">
 
     <!-- Top Navbar -->
-    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <span class="bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider shadow-sm">SINYOABE</span>
+    <header class="theme-header bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3 shrink-0">
+            <span class="theme-brand bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider">SINYOABE</span>
             <span class="text-xs text-slate-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-heart text-rose-500 animate-love"></i> 
-                <span class="animate-pulse">Made with Love</span>
+                <span class="animate-pulse hidden sm:inline">Made with Love</span>
             </span>
         </div>
-        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden md:block text-center max-w-md truncate">
+
+        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden lg:block text-center max-w-md truncate">
             "Stay Hungry, Stay Foolish." - Steve Jobs
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-400 mr-1 animate-export">
+
+        <div class="flex items-center gap-2 shrink-0">
+            <!-- Pemilih 5 Tema Warna -->
+            <div class="flex items-center gap-1.5 bg-slate-950/60 border theme-border px-2 py-1 rounded text-xs mr-1" title="Ganti Tema Tampilan">
+                <i class="fa-solid fa-palette text-amber-400"></i>
+                <select id="themeSelector" onchange="applyTheme(this.value)" class="bg-transparent text-slate-200 outline-none cursor-pointer font-medium">
+                    <option value="midnight" class="bg-slate-900 text-white">1. Midnight Slate</option>
+                    <option value="cyberpunk" class="bg-slate-900 text-fuchsia-300">2. Cyberpunk Neon</option>
+                    <option value="emerald" class="bg-slate-900 text-emerald-300">3. Emerald Matrix</option>
+                    <option value="sunset" class="bg-slate-900 text-rose-300">4. Sakura Sunset</option>
+                    <option value="ocean" class="bg-slate-900 text-cyan-300">5. Ocean Cobalt</option>
+                </select>
+            </div>
+
+            <span class="text-xs text-slate-400 mr-1 animate-export hidden sm:inline-flex">
                 export to <i class="fa-solid fa-arrow-right"></i>
             </span>
             <button onclick="exportPortable()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition cursor-pointer">
@@ -65,10 +130,10 @@
     <div class="flex flex-1 overflow-hidden">
         
         <!-- Left Panel: Code Editor & Terminal -->
-        <div class="w-1/2 flex flex-col border-r border-slate-800 bg-slate-950">
-            <div class="bg-slate-900 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
+        <div class="w-1/2 flex flex-col border-r theme-panel theme-border bg-slate-950">
+            <div class="theme-toolbar bg-slate-900 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
                 <div class="flex items-center gap-2">
-                    <button onclick="switchTab('html')" id="tab-html" class="px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer">
+                    <button onclick="switchTab('html')" id="tab-html" class="theme-surface px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer">
                         <i class="fa-brands fa-html5"></i> index.html
                     </button>
                     <button onclick="switchTab('py')" id="tab-py" class="px-2.5 py-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer">
@@ -76,21 +141,21 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <select onchange="changeFontSize(this.value)" class="bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700 outline-none">
+                    <select onchange="changeFontSize(this.value)" class="theme-surface bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700 outline-none">
                         <option value="13px">Font: 13px (Default)</option>
                         <option value="15px">Font: 15px</option>
                         <option value="18px">Font: 18px</option>
                     </select>
-                    <button onclick="runCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
+                    <button onclick="runCode()" class="theme-btn-accent bg-blue-600 hover:opacity-90 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
                         <i class="fa-solid fa-play"></i> Jalankan
                     </button>
                     <button onclick="clearEditor()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
                         <i class="fa-solid fa-trash"></i> Hapus Semua
                     </button>
-                    <button onclick="pasteCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer">
+                    <button onclick="pasteCode()" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer">
                         <i class="fa-solid fa-paste"></i> Paste
                     </button>
-                    <button onclick="copyCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer">
+                    <button onclick="copyCode()" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer">
                         <i class="fa-solid fa-copy"></i> Copy Code
                     </button>
                 </div>
@@ -99,8 +164,8 @@
             <div id="editor"></div>
 
             <!-- Terminal Output -->
-            <div class="h-36 bg-black border-t border-slate-800 flex flex-col">
-                <div class="bg-slate-900 px-3 py-1 text-xs text-slate-400 flex justify-between items-center border-b border-slate-800">
+            <div class="h-36 bg-black/90 border-t theme-border flex flex-col">
+                <div class="theme-toolbar bg-slate-900 px-3 py-1 text-xs text-slate-400 flex justify-between items-center border-b border-slate-800">
                     <span><i class="fa-solid fa-terminal text-emerald-400 mr-1"></i> Terminal Output (root@senpai-wsl:~#)</span>
                     <button onclick="clearTerminal()" class="hover:text-white cursor-pointer">Clear</button>
                 </div>
@@ -113,14 +178,14 @@
         </div>
 
         <!-- Right Panel: Live Device Preview & Chat -->
-        <div class="w-1/2 flex flex-col bg-slate-900/50 relative">
-            <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
+        <div class="w-1/2 flex flex-col bg-slate-900/30 relative">
+            <div class="theme-toolbar bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
                 <span class="text-slate-400 font-medium"><i class="fa-solid fa-mobile-screen mr-1"></i> Live Device Preview</span>
                 <div class="flex items-center gap-1.5">
-                    <button onclick="setDevice('phone')" id="btn-phone" class="bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
-                    <button onclick="setDevice('tablet')" id="btn-tablet" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
-                    <button onclick="setDevice('full')" id="btn-full" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
-                    <button onclick="toggleChat()" id="btn-chat" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1.5 cursor-pointer transition relative">
+                    <button onclick="setDevice('phone')" id="btn-phone" class="theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
+                    <button onclick="setDevice('tablet')" id="btn-tablet" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
+                    <button onclick="setDevice('full')" id="btn-full" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
+                    <button onclick="toggleChat()" id="btn-chat" class="theme-btn-secondary bg-sky-600 hover:opacity-90 text-white px-2.5 py-1 rounded font-medium flex items-center gap-1.5 cursor-pointer transition relative">
                         <i class="fa-solid fa-comments"></i> Chat
                         <span id="onlineBadgeNav" class="bg-emerald-400 text-slate-950 font-bold text-[10px] px-1.5 rounded-full">0</span>
                         <span id="unreadDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping"></span>
@@ -137,11 +202,11 @@
             </div>
 
             <!-- Panel Public Chat Room -->
-            <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/95 p-4 overflow-hidden">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl relative">
+            <div id="chatPanel" class="hidden flex-1 flex flex-col bg-slate-950/90 p-4 overflow-hidden">
+                <div class="theme-panel theme-border bg-slate-900 border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl relative">
                     
                     <!-- Chat Header -->
-                    <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between gap-2">
+                    <div class="theme-toolbar bg-slate-800/80 px-4 py-2.5 border-b border-slate-700 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 shrink-0">
                             <span id="connStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" title="Menghubungkan server..."></span>
                             <h3 class="font-semibold text-sm text-white">Live Class Chat</h3>
@@ -163,8 +228,8 @@
                     </div>
 
                     <!-- Form Login Simple -->
-                    <div id="chatLoginView" class="flex-1 flex items-center justify-center p-6 bg-slate-900/90">
-                        <form onsubmit="submitChatLogin(event)" class="w-full max-w-xs bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+                    <div id="chatLoginView" class="flex-1 flex items-center justify-center p-6 bg-slate-900/80">
+                        <form onsubmit="submitChatLogin(event)" class="theme-panel theme-border w-full max-w-xs bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
                             <div class="text-center space-y-1">
                                 <div class="w-10 h-10 bg-sky-600/20 border border-sky-500/40 text-sky-400 rounded-full flex items-center justify-center mx-auto mb-2">
                                     <i class="fa-solid fa-user-check"></i>
@@ -177,16 +242,16 @@
                                 <div>
                                     <label class="block text-[11px] text-slate-300 font-medium mb-1">Nama User</label>
                                     <input type="text" id="loginNameInput" required maxlength="25" placeholder="Contoh: Willy / Budi"
-                                        class="w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
+                                        class="theme-surface theme-border w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] text-slate-300 font-medium mb-1">Asal (Sekolah / Kelas)</label>
                                     <input type="text" id="loginOriginInput" required maxlength="35" placeholder="Contoh: SDN Sendangmulyo 04"
-                                        class="w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
+                                        class="theme-surface theme-border w-full bg-slate-900 text-white text-xs rounded-lg px-3 py-2 border border-slate-700 focus:border-sky-500 outline-none">
                                 </div>
                             </div>
 
-                            <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5">
+                            <button type="submit" class="theme-btn-secondary w-full bg-sky-600 hover:opacity-90 text-white font-semibold text-xs py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Chat
                             </button>
                         </form>
@@ -195,13 +260,13 @@
                     <!-- Area Ruang Chat Utama -->
                     <div id="chatRoomView" class="hidden flex-1 flex flex-col overflow-hidden">
                         <!-- Bar Daftar User Online -->
-                        <div class="bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
+                        <div class="theme-panel theme-border bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex items-center gap-2 overflow-x-auto text-xs">
                             <span class="text-slate-400 whitespace-nowrap font-medium"><i class="fa-solid fa-users text-sky-400 mr-1"></i> Online:</span>
                             <div id="onlineUsersList" class="flex items-center gap-1.5"></div>
                         </div>
 
                         <!-- Info Auto Reset 12 Malam -->
-                        <div class="bg-slate-900/60 px-4 py-1 border-b border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
+                        <div class="theme-toolbar bg-slate-900/60 px-4 py-1 border-b border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
                             <span><i class="fa-regular fa-clock mr-1"></i> Riwayat chat otomatis di-reset setiap pukul 00:00 (12 malam)</span>
                             <span id="chatDateBadge" class="font-mono text-slate-400"></span>
                         </div>
@@ -214,11 +279,11 @@
                         </div>
 
                         <!-- Chat Input Box -->
-                        <div class="p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
+                        <div class="theme-toolbar p-3 bg-slate-900 border-t border-slate-800 flex gap-2">
                             <input type="text" id="chatInput" placeholder="Ketik pesan ke teman atau gurumu..." autocomplete="off"
                                 onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
-                                class="flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
-                            <button type="button" onclick="sendChatMessage()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
+                                class="theme-surface theme-border flex-1 bg-slate-800 text-white text-xs rounded-lg px-3.5 py-2.5 border border-slate-700 focus:border-sky-500 outline-none">
+                            <button type="button" onclick="sendChatMessage()" class="theme-btn-secondary bg-sky-600 hover:opacity-90 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition">
                                 <i class="fa-solid fa-paper-plane"></i> Kirim
                             </button>
                         </div>
@@ -231,6 +296,97 @@
     </div>
 
     <script>
+        // ==========================================
+        // 5 TEMA WARNA (EDITOR, TOMBOL, GARIS, HP)
+        // ==========================================
+        const THEMES = {
+            midnight: {
+                name: 'Midnight Slate',
+                aceTheme: 'ace/theme/tomorrow_night_eighties',
+                vars: {
+                    '--bg-main': '#0f172a',
+                    '--bg-header': '#0f172a',
+                    '--bg-panel': '#020617',
+                    '--bg-surface': '#1e293b',
+                    '--border-color': '#1e293b',
+                    '--accent-primary': '#4f46e5',
+                    '--accent-secondary': '#0284c7',
+                    '--accent-glow': 'rgba(79, 70, 229, 0.35)',
+                    '--phone-bezel': '#1e293b',
+                    '--phone-ring': '#334155',
+                    '--text-accent': '#38bdf8'
+                }
+            },
+            cyberpunk: {
+                name: 'Cyberpunk Neon',
+                aceTheme: 'ace/theme/dracula',
+                vars: {
+                    '--bg-main': '#130722',
+                    '--bg-header': '#1a0b2e',
+                    '--bg-panel': '#0d0417',
+                    '--bg-surface': '#2a124a',
+                    '--border-color': '#581c87',
+                    '--accent-primary': '#c026d3',
+                    '--accent-secondary': '#7c3aed',
+                    '--accent-glow': 'rgba(192, 38, 211, 0.45)',
+                    '--phone-bezel': '#3b0764',
+                    '--phone-ring': '#d946ef',
+                    '--text-accent': '#f0abfc'
+                }
+            },
+            emerald: {
+                name: 'Emerald Matrix',
+                aceTheme: 'ace/theme/monokai',
+                vars: {
+                    '--bg-main': '#041711',
+                    '--bg-header': '#06241b',
+                    '--bg-panel': '#020d0a',
+                    '--bg-surface': '#0b382a',
+                    '--border-color': '#065f46',
+                    '--accent-primary': '#059669',
+                    '--accent-secondary': '#0d9488',
+                    '--accent-glow': 'rgba(16, 185, 129, 0.4)',
+                    '--phone-bezel': '#064e3b',
+                    '--phone-ring': '#10b981',
+                    '--text-accent': '#34d399'
+                }
+            },
+            sunset: {
+                name: 'Sakura Sunset',
+                aceTheme: 'ace/theme/twilight',
+                vars: {
+                    '--bg-main': '#1f0a14',
+                    '--bg-header': '#2b0e1c',
+                    '--bg-panel': '#14050c',
+                    '--bg-surface': '#42162b',
+                    '--border-color': '#881337',
+                    '--accent-primary': '#e11d48',
+                    '--accent-secondary': '#ea580c',
+                    '--accent-glow': 'rgba(225, 29, 72, 0.4)',
+                    '--phone-bezel': '#4c0519',
+                    '--phone-ring': '#fb7185',
+                    '--text-accent': '#fda4af'
+                }
+            },
+            ocean: {
+                name: 'Ocean Cobalt',
+                aceTheme: 'ace/theme/cobalt',
+                vars: {
+                    '--bg-main': '#041527',
+                    '--bg-header': '#07213d',
+                    '--bg-panel': '#020c17',
+                    '--bg-surface': '#0c3561',
+                    '--border-color': '#0369a1',
+                    '--accent-primary': '#0284c7',
+                    '--accent-secondary': '#2563eb',
+                    '--accent-glow': 'rgba(14, 165, 233, 0.4)',
+                    '--phone-bezel': '#0c4a6e',
+                    '--phone-ring': '#38bdf8',
+                    '--text-accent': '#7dd3fc'
+                }
+            }
+        };
+
         // ==========================================
         // ROTATING DEVELOPER QUOTES (TOP NAVBAR)
         // ==========================================
@@ -290,6 +446,25 @@ print("Coding Senpai WSL Backend Active!")`;
         editor.session.setMode("ace/mode/html");
         editor.setValue(defaultHTML, -1);
 
+        function applyTheme(themeKey, silent = false) {
+            const theme = THEMES[themeKey] || THEMES.midnight;
+            const root = document.documentElement;
+            Object.entries(theme.vars).forEach(([k, v]) => {
+                root.style.setProperty(k, v);
+            });
+            editor.setTheme(theme.aceTheme);
+            localStorage.setItem('senpai_ide_theme', themeKey);
+            const selector = document.getElementById('themeSelector');
+            if (selector) selector.value = themeKey;
+            if (!silent) {
+                logTerminal(`[INFO] Tema tampilan diubah ke: ${theme.name}`);
+            }
+        }
+
+        // Terapkan tema tersimpan saat web dimuat
+        const savedTheme = localStorage.getItem('senpai_ide_theme') || 'midnight';
+        applyTheme(savedTheme, true);
+
         function logTerminal(msg) {
             const term = document.getElementById('terminal');
             const line = document.createElement('div');
@@ -312,12 +487,12 @@ print("Coding Senpai WSL Backend Active!")`;
             if (tab === 'html') {
                 editor.session.setMode("ace/mode/html");
                 editor.setValue(codeStore.html, -1);
-                document.getElementById('tab-html').className = "px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer";
+                document.getElementById('tab-html').className = "theme-surface px-2.5 py-1 rounded bg-slate-800 text-amber-400 font-medium cursor-pointer";
                 document.getElementById('tab-py').className = "px-2.5 py-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer";
             } else {
                 editor.session.setMode("ace/mode/python");
                 editor.setValue(codeStore.py, -1);
-                document.getElementById('tab-py').className = "px-2.5 py-1 rounded bg-slate-800 text-sky-400 font-medium cursor-pointer";
+                document.getElementById('tab-py').className = "theme-surface px-2.5 py-1 rounded bg-slate-800 text-sky-400 font-medium cursor-pointer";
                 document.getElementById('tab-html').className = "px-2.5 py-1 rounded text-slate-400 hover:bg-slate-800 cursor-pointer";
             }
         }
@@ -364,21 +539,21 @@ print("Coding Senpai WSL Backend Active!")`;
             const label = document.getElementById('deviceLabel');
             
             ['btn-phone', 'btn-tablet', 'btn-full'].forEach(id => {
-                document.getElementById(id).className = "bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded cursor-pointer";
+                document.getElementById(id).className = "theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer";
             });
 
             if (type === 'phone') {
                 container.className = 'phone-frame';
                 label.textContent = 'iPhone 15 Pro (375px x 700px)';
-                document.getElementById('btn-phone').className = "bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
+                document.getElementById('btn-phone').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             } else if (type === 'tablet') {
                 container.className = 'tablet-frame';
                 label.textContent = 'iPad Air (600px x 700px)';
-                document.getElementById('btn-tablet').className = "bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
+                document.getElementById('btn-tablet').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             } else {
                 container.className = 'full-frame';
                 label.textContent = 'Full Screen Responsive';
-                document.getElementById('btn-full').className = "bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
+                document.getElementById('btn-full').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             }
         }
 
@@ -702,8 +877,8 @@ print("Coding Senpai WSL Backend Active!")`;
                     </span>
                     <div class="px-3.5 py-2 rounded-2xl max-w-[82%] break-words text-xs shadow ${
                         isMe 
-                        ? 'bg-sky-600 text-white rounded-br-none' 
-                        : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'
+                        ? 'theme-btn-secondary bg-sky-600 text-white rounded-br-none' 
+                        : 'theme-surface bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'
                     }">
                         ${escapeHTML(msg.text)}
                     </div>
