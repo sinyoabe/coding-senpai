@@ -17,6 +17,21 @@
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
         #chatMessages::-webkit-scrollbar { width: 6px; }
         #chatMessages::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        
+        /* Animasi Navbar (Made with Love, Quotes Fade, Export Arrow) */
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.25); opacity: 0.7; }
+        }
+        .animate-love { display: inline-block; animation: heartbeat 1.4s infinite ease-in-out; }
+
+        @keyframes exportSlide {
+            0%, 100% { transform: translateX(0); opacity: 0.65; }
+            50% { transform: translateX(4px); opacity: 1; color: #38bdf8; }
+        }
+        .animate-export { display: inline-flex; align-items: center; gap: 4px; animation: exportSlide 1.6s infinite ease-in-out; }
+
+        #quoteDisplay { transition: opacity 0.4s ease-in-out; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -24,14 +39,19 @@
     <!-- Top Navbar -->
     <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <span class="bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider">SINYOABE</span>
-            <span class="text-xs text-slate-400"><i class="fa-solid fa-heart text-rose-500"></i> Made with Love</span>
+            <span class="bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider shadow-sm">SINYOABE</span>
+            <span class="text-xs text-slate-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-heart text-rose-500 animate-love"></i> 
+                <span class="animate-pulse">Made with Love</span>
+            </span>
         </div>
-        <div class="text-xs italic text-slate-400 hidden md:block">
+        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden md:block text-center max-w-md truncate">
             "Stay Hungry, Stay Foolish." - Steve Jobs
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-400 mr-1">export to <i class="fa-solid fa-arrow-right"></i></span>
+            <span class="text-xs text-slate-400 mr-1 animate-export">
+                export to <i class="fa-solid fa-arrow-right"></i>
+            </span>
             <button onclick="exportPortable()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-file-code"></i> Portable
             </button>
@@ -211,6 +231,31 @@
     </div>
 
     <script>
+        // ==========================================
+        // ROTATING DEVELOPER QUOTES (TOP NAVBAR)
+        // ==========================================
+        const devQuotes = [
+            '"Stay Hungry, Stay Foolish." - Steve Jobs',
+            '"Talk is cheap. Show me the code." - Linus Torvalds',
+            '"First, solve the problem. Then, write the code." - John Johnson',
+            '"Code is like humor. When you have to explain it, it’s bad." - Cory House',
+            '"Simplicity is the soul of efficiency." - Austin Freeman',
+            '"Any fool can write code that a computer can understand." - Martin Fowler',
+            '"Make it work, make it right, make it fast." - Kent Beck',
+            '"Belajar coding hari ini, membangun masa depan esok hari." - Coding Senpai'
+        ];
+        let quoteIndex = 0;
+        setInterval(() => {
+            const quoteEl = document.getElementById('quoteDisplay');
+            if (!quoteEl) return;
+            quoteEl.style.opacity = '0';
+            setTimeout(() => {
+                quoteIndex = (quoteIndex + 1) % devQuotes.length;
+                quoteEl.textContent = devQuotes[quoteIndex];
+                quoteEl.style.opacity = '1';
+            }, 400);
+        }, 5000);
+
         const defaultHTML = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -365,7 +410,6 @@ print("Coding Senpai WSL Backend Active!")`;
         const messageBuffer = [];
         const onlineUsersMap = {};
 
-        // Hapus sesi login lama jika sudah berganti hari (lewat pukul 12 malam)
         if (myProfile && myProfile.dateKey && myProfile.dateKey !== currentChatDate) {
             localStorage.removeItem('senpai_mqtt_profile');
             myProfile = null;
@@ -415,7 +459,6 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         });
 
-        // Cek pergantian hari otomatis setiap 10 detik (Auto Clear Chat pukul 00:00 malam)
         setInterval(() => {
             const latestDate = getLocalDateKey();
             if (latestDate !== currentChatDate) {
@@ -423,7 +466,6 @@ print("Coding Senpai WSL Backend Active!")`;
                 currentChatDate = latestDate;
                 document.getElementById('chatDateBadge').textContent = currentChatDate;
 
-                // Unsubscribe topik kemarin & pindah ke topik hari baru
                 if (mqttClient && mqttClient.connected) {
                     mqttClient.unsubscribe(getTopicMsg(oldDate));
                     mqttClient.unsubscribe(getTopicPresence(oldDate));
@@ -431,7 +473,6 @@ print("Coding Senpai WSL Backend Active!")`;
                     mqttClient.subscribe(getTopicPresence(currentChatDate));
                 }
 
-                // Bersihkan seluruh isi chat & daftar online
                 renderedMsgIds.clear();
                 messageBuffer.length = 0;
                 Object.keys(onlineUsersMap).forEach(k => delete onlineUsersMap[k]);
@@ -545,22 +586,18 @@ print("Coding Senpai WSL Backend Active!")`;
             publishSystemNotice(`${nameVal} (${originVal}) bergabung ke obrolan.`);
         }
 
-        // Fitur Leave Chat (Logout siswa)
         function leaveChat() {
             if (!myProfile) return;
             const leavingName = myProfile.name;
             const leavingOrigin = myProfile.origin;
 
-            // 1. Kirim notifikasi keluar & hapus kehadiran dari daftar online semua user
             publishSystemNotice(`${leavingName} (${leavingOrigin}) meninggalkan obrolan.`);
             broadcastPresence('offline');
 
-            // 2. Bersihkan data sesi lokal
             delete onlineUsersMap[myPeerId];
             myProfile = null;
             localStorage.removeItem('senpai_mqtt_profile');
 
-            // 3. Kembalikan tampilan ke halaman login
             document.getElementById('loginNameInput').value = '';
             document.getElementById('loginOriginInput').value = '';
             recalculateRanksAndUI();
