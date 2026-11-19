@@ -437,24 +437,55 @@
         <div class="w-1/2 flex flex-col bg-slate-900/30 relative">
             <div class="theme-toolbar bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs relative z-30">
                 
-                <!-- Tombol Klik "Change Background" + Popover Pengaturan Gambar Siswa -->
+                <!-- Tombol Klik "Change Background" + Popover Pengaturan Gambar & 4 Musim -->
                 <div class="relative">
-                    <button id="changeBgBtn" onclick="toggleBgPopover(event)" title="Klik untuk ubah gambar latar belakang area preview"
+                    <button id="changeBgBtn" onclick="toggleBgPopover(event)" title="Klik untuk ubah gambar latar belakang & animasi 4 musim"
                         class="text-slate-300 hover:text-white font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/15 transition cursor-pointer">
                         <i class="fa-solid fa-image" style="color: var(--text-accent)"></i>
                         <span>Change Background</span>
+                        <span id="seasonActiveBadge" class="hidden text-[10px] bg-sky-500/20 text-sky-300 border border-sky-400/40 px-1.5 py-0.2 rounded-full"></span>
                     </button>
 
-                    <!-- Kotak Pengaturan Background (Klik di luar kotak = Konfirmasi OK) -->
-                    <div id="bgCustomizerPopover" class="bg-popover bg-closed absolute left-0 top-10 w-72 theme-panel theme-border bg-slate-950/95 backdrop-blur-md border rounded-2xl p-3.5 shadow-2xl space-y-3 z-50">
+                    <!-- Kotak Pengaturan Background & Ceklist 4 Musim (Klik di luar kotak = Konfirmasi OK) -->
+                    <div id="bgCustomizerPopover" class="bg-popover bg-closed absolute left-0 top-10 w-80 theme-panel theme-border bg-slate-950/95 backdrop-blur-md border rounded-2xl p-3.5 shadow-2xl space-y-3 z-50">
                         <div class="flex items-center justify-between border-b theme-border pb-2">
                             <span class="text-xs font-bold text-white flex items-center gap-1.5">
                                 <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--text-accent)"></i>
-                                Background Preview
+                                Background & 4 Musim
                             </span>
                             <span class="text-[10px] text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
                                 Klik luar = OK
                             </span>
+                        </div>
+
+                        <!-- Ceklist Auto Preview Animasi 4 Musim -->
+                        <div class="space-y-1.5 bg-slate-900/80 p-2.5 rounded-xl border theme-border">
+                            <div class="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
+                                <span><i class="fa-solid fa-cloud-sun-rain mr-1 text-amber-400"></i> Animasi 4 Musim (Auto Preview)</span>
+                                <span class="text-[9px] text-slate-400">Kosong = Default</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+                                <label class="flex items-center gap-2 text-[11px] text-sky-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                    <input type="checkbox" id="season-snow" value="snow" onchange="handleSeasonCheckbox(this)"
+                                        class="accent-sky-400 rounded cursor-pointer">
+                                    <span>❄️ Salju</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-amber-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                    <input type="checkbox" id="season-autumn" value="autumn" onchange="handleSeasonCheckbox(this)"
+                                        class="accent-amber-500 rounded cursor-pointer">
+                                    <span>🍂 Gugur</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-indigo-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                    <input type="checkbox" id="season-rain" value="rain" onchange="handleSeasonCheckbox(this)"
+                                        class="accent-indigo-400 rounded cursor-pointer">
+                                    <span>🌧️ Hujan</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-[11px] text-pink-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                    <input type="checkbox" id="season-spring" value="spring" onchange="handleSeasonCheckbox(this)"
+                                        class="accent-pink-400 rounded cursor-pointer">
+                                    <span>🌸 Semi</span>
+                                </label>
+                            </div>
                         </div>
 
                         <!-- Upload Gambar Siswa -->
@@ -506,11 +537,11 @@
                                 class="w-full accent-emerald-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
                         </div>
 
-                        <!-- Tombol Reset Background -->
+                        <!-- Tombol Reset Background & Musim -->
                         <div class="pt-1 border-t theme-border flex items-center justify-between gap-2">
                             <button type="button" onclick="resetPreviewBg()"
                                 class="flex-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 text-[11px] font-semibold py-1.5 rounded-lg cursor-pointer transition">
-                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Gelap
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Default
                             </button>
                             <button type="button" onclick="closeBgPopover(true)"
                                 class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold py-1.5 rounded-lg cursor-pointer transition">
@@ -528,12 +559,15 @@
                 <span id="deviceLabel" class="text-slate-500 hidden xl:inline">iPhone 15 Pro (375px x 700px)</span>
             </div>
 
-            <!-- Area Preview dengan Lapisan Gambar Background Custom Siswa -->
+            <!-- Area Preview dengan Lapisan Gambar Custom & Canvas Animasi 4 Musim -->
             <div id="previewArea" class="flex-1 flex items-center justify-center p-4 overflow-auto relative">
                 <!-- Layer Gambar Latar Belakang di Belakang Frame HP -->
                 <div id="previewBgLayer" class="absolute inset-0 pointer-events-none transition-opacity duration-150"
                     style="background-repeat: no-repeat; background-position: 50% 50%; background-size: cover; opacity: 0.85;">
                 </div>
+
+                <!-- Layer Canvas Animasi 4 Musim (Salju, Gugur, Hujan, Semi) -->
+                <canvas id="seasonCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-[5]"></canvas>
 
                 <div id="previewContainer" class="phone-frame">
                     <iframe id="previewFrame" class="w-full h-full border-none bg-white"></iframe>
@@ -918,7 +952,243 @@
 
     <script>
         // ==========================================
-        // CHANGE BACKGROUND PREVIEW (CUSTOM SISWA)
+        // ANIMASI 4 MUSIM (CANVAS ENGINE AUTO PREVIEW)
+        // ==========================================
+        const seasonCanvas = document.getElementById('seasonCanvas');
+        const seasonCtx = seasonCanvas.getContext('2d');
+        let seasonAnimFrame = null;
+        let seasonParticles = [];
+        let springFlowers = [];
+
+        function resizeSeasonCanvas() {
+            const area = document.getElementById('previewArea');
+            if (!area || !seasonCanvas) return;
+            seasonCanvas.width = area.clientWidth;
+            seasonCanvas.height = area.clientHeight;
+        }
+        window.addEventListener('resize', () => {
+            resizeSeasonCanvas();
+            if (previewBgState.season === 'spring') initSpringFlowers();
+        });
+
+        function initSnowParticles() {
+            seasonParticles = Array.from({ length: 85 }, () => ({
+                x: Math.random() * seasonCanvas.width,
+                y: Math.random() * seasonCanvas.height,
+                r: Math.random() * 3.2 + 1.2,
+                speedY: Math.random() * 1.4 + 0.6,
+                drift: Math.random() * Math.PI * 2,
+                alpha: Math.random() * 0.6 + 0.35
+            }));
+        }
+
+        function initAutumnParticles() {
+            const colors = ['#f97316', '#ea580c', '#dc2626', '#eab308', '#d97706'];
+            seasonParticles = Array.from({ length: 42 }, () => ({
+                x: Math.random() * seasonCanvas.width,
+                y: Math.random() * seasonCanvas.height,
+                size: Math.random() * 7 + 5,
+                speedY: Math.random() * 1.5 + 0.8,
+                speedX: (Math.random() - 0.5) * 1.2,
+                angle: Math.random() * Math.PI * 2,
+                spin: (Math.random() - 0.5) * 0.06,
+                sway: Math.random() * Math.PI * 2,
+                color: colors[Math.floor(Math.random() * colors.length)]
+            }));
+        }
+
+        function initRainParticles() {
+            seasonParticles = Array.from({ length: 130 }, () => ({
+                x: Math.random() * (seasonCanvas.width + 100),
+                y: Math.random() * seasonCanvas.height,
+                len: Math.random() * 16 + 10,
+                speedY: Math.random() * 9 + 11,
+                speedX: -2.2,
+                alpha: Math.random() * 0.45 + 0.25
+            }));
+        }
+
+        function initSpringFlowers() {
+            const w = seasonCanvas.width || 600;
+            const count = Math.max(12, Math.floor(w / 38));
+            const petalPalettes = [
+                ['#f472b6', '#fbcfe8', '#fde047'],
+                ['#fb7185', '#fecdd3', '#fef08a'],
+                ['#c084fc', '#f3e8ff', '#fde047'],
+                ['#38bdf8', '#e0f2fe', '#fef08a'],
+                ['#fb923c', '#ffedd5', '#fef08a']
+            ];
+            springFlowers = Array.from({ length: count }, (_, i) => {
+                const palette = petalPalettes[i % petalPalettes.length];
+                return {
+                    x: (w / (count + 1)) * (i + 1) + (Math.random() - 0.5) * 18,
+                    maxStemH: Math.random() * 65 + 45,
+                    currentStemH: 0,
+                    maxBloom: Math.random() * 10 + 11,
+                    currentBloom: 0,
+                    delay: i * 5,
+                    tick: 0,
+                    swayOffset: Math.random() * Math.PI * 2,
+                    petalColor: palette[0],
+                    innerColor: palette[1],
+                    centerColor: palette[2],
+                    petals: 5 + (i % 2)
+                };
+            });
+        }
+
+        function renderSeasonLoop() {
+            const mode = previewBgState.season;
+            if (!mode) {
+                seasonCtx.clearRect(0, 0, seasonCanvas.width, seasonCanvas.height);
+                seasonAnimFrame = null;
+                return;
+            }
+
+            const W = seasonCanvas.width;
+            const H = seasonCanvas.height;
+            seasonCtx.clearRect(0, 0, W, H);
+
+            if (mode === 'snow') {
+                seasonParticles.forEach(p => {
+                    p.drift += 0.02;
+                    p.y += p.speedY;
+                    p.x += Math.sin(p.drift) * 0.6;
+                    if (p.y > H + 5) { p.y = -5; p.x = Math.random() * W; }
+                    if (p.x > W) p.x = 0;
+                    if (p.x < 0) p.x = W;
+
+                    seasonCtx.beginPath();
+                    seasonCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    seasonCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+                    seasonCtx.fill();
+                });
+            } else if (mode === 'autumn') {
+                seasonParticles.forEach(p => {
+                    p.sway += 0.03;
+                    p.angle += p.spin;
+                    p.y += p.speedY;
+                    p.x += Math.sin(p.sway) * 1.1 + p.speedX * 0.3;
+                    if (p.y > H + 12) { p.y = -12; p.x = Math.random() * W; }
+                    if (p.x > W + 12) p.x = -12;
+                    if (p.x < -12) p.x = W + 12;
+
+                    seasonCtx.save();
+                    seasonCtx.translate(p.x, p.y);
+                    seasonCtx.rotate(p.angle);
+                    seasonCtx.fillStyle = p.color;
+                    seasonCtx.beginPath();
+                    seasonCtx.moveTo(0, -p.size);
+                    seasonCtx.quadraticCurveTo(p.size * 0.8, 0, 0, p.size);
+                    seasonCtx.quadraticCurveTo(-p.size * 0.8, 0, 0, -p.size);
+                    seasonCtx.fill();
+                    seasonCtx.restore();
+                });
+            } else if (mode === 'rain') {
+                seasonCtx.lineWidth = 1.3;
+                seasonParticles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    if (p.y > H + 20) {
+                        p.y = -20;
+                        p.x = Math.random() * (W + 100);
+                    }
+                    seasonCtx.beginPath();
+                    seasonCtx.moveTo(p.x, p.y);
+                    seasonCtx.lineTo(p.x + p.speedX * 1.4, p.y + p.len);
+                    seasonCtx.strokeStyle = `rgba(147, 197, 253, ${p.alpha})`;
+                    seasonCtx.stroke();
+                });
+            } else if (mode === 'spring') {
+                // Hamparan rumput lembut di bawah preview
+                const grad = seasonCtx.createLinearGradient(0, H - 35, 0, H);
+                grad.addColorStop(0, 'rgba(16, 185, 129, 0)');
+                grad.addColorStop(1, 'rgba(16, 185, 129, 0.28)');
+                seasonCtx.fillStyle = grad;
+                seasonCtx.fillRect(0, H - 35, W, 35);
+
+                springFlowers.forEach(f => {
+                    f.tick++;
+                    if (f.tick > f.delay) {
+                        if (f.currentStemH < f.maxStemH) {
+                            f.currentStemH += (f.maxStemH - f.currentStemH) * 0.05;
+                        }
+                        if (f.currentStemH > f.maxStemH * 0.65 && f.currentBloom < f.maxBloom) {
+                            f.currentBloom += (f.maxBloom - f.currentBloom) * 0.06;
+                        }
+                    }
+
+                    const sway = Math.sin(f.tick * 0.035 + f.swayOffset) * 4;
+                    const baseX = f.x;
+                    const baseY = H;
+                    const topX = baseX + sway;
+                    const topY = H - f.currentStemH;
+
+                    // Tangkai bunga
+                    seasonCtx.beginPath();
+                    seasonCtx.moveTo(baseX, baseY);
+                    seasonCtx.quadraticCurveTo(baseX + sway * 0.4, H - f.currentStemH * 0.5, topX, topY);
+                    seasonCtx.strokeStyle = '#22c55e';
+                    seasonCtx.lineWidth = 2.4;
+                    seasonCtx.stroke();
+
+                    // Daun kecil pada tangkai
+                    if (f.currentStemH > 22) {
+                        seasonCtx.fillStyle = '#4ade80';
+                        seasonCtx.beginPath();
+                        seasonCtx.ellipse(baseX + sway * 0.4 + 6, H - f.currentStemH * 0.45, 7, 3.2, -0.4, 0, Math.PI * 2);
+                        seasonCtx.fill();
+                    }
+
+                    // Kelopak bunga bermekaran
+                    if (f.currentBloom > 0.5) {
+                        seasonCtx.save();
+                        seasonCtx.translate(topX, topY);
+                        for (let i = 0; i < f.petals; i++) {
+                            const rot = (Math.PI * 2 / f.petals) * i + Math.sin(f.tick * 0.02) * 0.08;
+                            seasonCtx.save();
+                            seasonCtx.rotate(rot);
+                            seasonCtx.beginPath();
+                            seasonCtx.ellipse(0, -f.currentBloom * 0.72, f.currentBloom * 0.46, f.currentBloom * 0.72, 0, 0, Math.PI * 2);
+                            seasonCtx.fillStyle = f.petalColor;
+                            seasonCtx.fill();
+                            seasonCtx.restore();
+                        }
+                        // Putik tengah bunga
+                        seasonCtx.beginPath();
+                        seasonCtx.arc(0, 0, f.currentBloom * 0.36, 0, Math.PI * 2);
+                        seasonCtx.fillStyle = f.centerColor;
+                        seasonCtx.fill();
+                        seasonCtx.restore();
+                    }
+                });
+            }
+
+            seasonAnimFrame = requestAnimationFrame(renderSeasonLoop);
+        }
+
+        function startSeasonAnimation(seasonKey) {
+            if (seasonAnimFrame) {
+                cancelAnimationFrame(seasonAnimFrame);
+                seasonAnimFrame = null;
+            }
+            resizeSeasonCanvas();
+
+            if (!seasonKey) {
+                seasonCtx.clearRect(0, 0, seasonCanvas.width, seasonCanvas.height);
+                return;
+            }
+
+            if (seasonKey === 'snow') initSnowParticles();
+            else if (seasonKey === 'autumn') initAutumnParticles();
+            else if (seasonKey === 'rain') initRainParticles();
+            else if (seasonKey === 'spring') initSpringFlowers();
+
+            renderSeasonLoop();
+        }
+
+        // ==========================================
+        // CHANGE BACKGROUND PREVIEW (CUSTOM SISWA + 4 MUSIM)
         // ==========================================
         let isBgPopoverOpen = false;
         let previewBgState = JSON.parse(localStorage.getItem('senpai_preview_bg') || 'null') || {
@@ -926,8 +1196,45 @@
             posX: 50,
             posY: 50,
             zoom: 100,
-            opacity: 85
+            opacity: 85,
+            season: ''
         };
+
+        const SEASON_LABELS = {
+            snow: '❄️ Salju',
+            autumn: '🍂 Gugur',
+            rain: '🌧️ Hujan',
+            spring: '🌸 Semi'
+        };
+
+        function syncSeasonCheckboxes() {
+            const active = previewBgState.season || '';
+            ['snow', 'autumn', 'rain', 'spring'].forEach(key => {
+                const cb = document.getElementById(`season-${key}`);
+                if (cb) cb.checked = (active === key);
+            });
+
+            const badge = document.getElementById('seasonActiveBadge');
+            if (badge) {
+                if (active && SEASON_LABELS[active]) {
+                    badge.textContent = SEASON_LABELS[active];
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        function handleSeasonCheckbox(checkboxEl) {
+            if (checkboxEl.checked) {
+                previewBgState.season = checkboxEl.value;
+            } else {
+                previewBgState.season = '';
+            }
+            syncSeasonCheckboxes();
+            startSeasonAnimation(previewBgState.season);
+            applyPreviewBgState(true);
+        }
 
         function applyPreviewBgState(saveToStorage = false) {
             const bgLayer = document.getElementById('previewBgLayer');
@@ -943,6 +1250,8 @@
             document.getElementById('bgZoomLabel').textContent = `${previewBgState.zoom}%`;
             document.getElementById('bgOpacityLabel').textContent = `${previewBgState.opacity}%`;
 
+            syncSeasonCheckboxes();
+
             if (previewBgState.image) {
                 bgLayer.style.backgroundImage = `url("${previewBgState.image}")`;
                 bgLayer.style.backgroundPosition = `${previewBgState.posX}% ${previewBgState.posY}%`;
@@ -955,9 +1264,7 @@
             if (saveToStorage) {
                 try {
                     localStorage.setItem('senpai_preview_bg', JSON.stringify(previewBgState));
-                } catch (e) {
-                    // Abaikan jika ukuran gambar base64 melebihi batas localStorage
-                }
+                } catch (e) {}
             }
         }
 
@@ -981,7 +1288,9 @@
             pop.classList.add('bg-closed');
             if (confirmSave) {
                 applyPreviewBgState(true);
-                if (previewBgState.image) {
+                if (previewBgState.season) {
+                    logTerminal(`[INFO] Efek musim '${SEASON_LABELS[previewBgState.season]}' aktif pada preview.`);
+                } else if (previewBgState.image) {
                     logTerminal(`[INFO] Background preview diperbarui (Posisi: ${previewBgState.posX}%, ${previewBgState.posY}%, Transparansi: ${previewBgState.opacity}%).`);
                 }
             }
@@ -1014,17 +1323,25 @@
                 posX: 50,
                 posY: 50,
                 zoom: 100,
-                opacity: 85
+                opacity: 85,
+                season: ''
             };
             document.getElementById('previewBgFileInput').value = '';
             localStorage.removeItem('senpai_preview_bg');
+            startSeasonAnimation('');
             applyPreviewBgState(false);
             closeBgPopover(false);
-            logTerminal(`[INFO] Background preview dikembalikan ke gelap default.`);
+            logTerminal(`[INFO] Background & efek musim dikembalikan ke default.`);
         }
 
-        // Inisialisasi state background tersimpan saat halaman dibuka
+        // Inisialisasi background & musim tersimpan saat halaman dibuka
         applyPreviewBgState(false);
+        setTimeout(() => {
+            resizeSeasonCanvas();
+            if (previewBgState.season) {
+                startSeasonAnimation(previewBgState.season);
+            }
+        }, 120);
 
         // Klik di luar kotak Change Background = Konfirmasi OK & Tutup
         document.addEventListener('click', (e) => {
@@ -1735,6 +2052,11 @@ print("Coding Senpai WSL Backend Active!")`;
                 label.textContent = 'Full Screen Responsive';
                 document.getElementById('btn-full').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             }
+
+            setTimeout(() => {
+                resizeSeasonCanvas();
+                if (previewBgState.season === 'spring') initSpringFlowers();
+            }, 360);
         }
 
         // ==========================================
