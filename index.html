@@ -560,7 +560,10 @@
                     <button onclick="setDevice('tablet')" id="btn-tablet" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
                     <button onclick="setDevice('full')" id="btn-full" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-expand"></i> Full Screen</button>
                 </div>
-                <span id="deviceLabel" class="text-slate-500 hidden xl:inline">iPhone 15 Pro (375px x 700px)</span>
+                <button id="webuiFullscreenBtn" onclick="toggleWebUIFullscreen()" title="Layar Penuh WebUI (Fokus Penuh ke CODING SENPAI)"
+                    class="theme-surface bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white border border-slate-700/80 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center justify-center shadow-xs">
+                    <i id="webuiFullscreenIcon" class="fa-solid fa-up-right-and-down-left-from-center text-xs"></i>
+                </button>
             </div>
 
             <!-- Area Preview dengan Lapisan Gambar Custom & Canvas Animasi 4 Musim -->
@@ -3069,9 +3072,47 @@ print("Coding Senpai WSL Backend Active!")`;
             logTerminal(`[INFO] Code copied to clipboard.`);
         }
 
+        function toggleWebUIFullscreen() {
+            const docEl = document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(() => {});
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        function syncWebUIFullscreenIcon() {
+            const icon = document.getElementById('webuiFullscreenIcon');
+            const btn = document.getElementById('webuiFullscreenBtn');
+            if (!icon || !btn) return;
+            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            if (isFull) {
+                icon.className = 'fa-solid fa-down-left-and-up-right-to-center text-xs text-sky-300';
+                btn.title = 'Keluar dari Layar Penuh WebUI (Esc)';
+                logTerminal('[INFO] Mode Layar Penuh WebUI aktif.');
+            } else {
+                icon.className = 'fa-solid fa-up-right-and-down-left-from-center text-xs';
+                btn.title = 'Layar Penuh WebUI (Fokus Penuh ke CODING SENPAI)';
+            }
+            setTimeout(() => {
+                resizeSeasonCanvas();
+                if (previewBgState.season === 'spring') initSpringFlowers();
+            }, 150);
+        }
+
+        document.addEventListener('fullscreenchange', syncWebUIFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', syncWebUIFullscreenIcon);
+
         function setDevice(type) {
             const container = document.getElementById('previewContainer');
-            const label = document.getElementById('deviceLabel');
             
             ['btn-phone', 'btn-tablet', 'btn-full'].forEach(id => {
                 document.getElementById(id).className = "theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer";
@@ -3079,15 +3120,12 @@ print("Coding Senpai WSL Backend Active!")`;
 
             if (type === 'phone') {
                 container.className = 'phone-frame';
-                label.textContent = 'iPhone 15 Pro (375px x 700px)';
                 document.getElementById('btn-phone').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             } else if (type === 'tablet') {
                 container.className = 'tablet-frame';
-                label.textContent = 'iPad Air (600px x 700px)';
                 document.getElementById('btn-tablet').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             } else {
                 container.className = 'full-frame';
-                label.textContent = 'Full Screen Responsive';
                 document.getElementById('btn-full').className = "theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer";
             }
 
