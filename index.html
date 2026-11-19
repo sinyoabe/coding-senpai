@@ -103,26 +103,47 @@
             pointer-events: auto;
         }
 
-        /* Floating Draggable YouTube Music Player */
+        /* Floating Draggable YouTube Music Player + Animasi Genie */
         .floating-yt-player {
             width: 340px;
             border: 2px solid var(--phone-ring);
-            border-radius: 18px;
+            border-radius: 20px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 20px var(--accent-glow);
             background-color: var(--bg-panel);
             overflow: hidden;
             user-select: none;
-            transform-origin: top right;
-            transition: transform 0.36s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.26s ease;
+            will-change: transform, opacity, filter;
+            transform-origin: bottom right;
+            transition: transform 0.42s cubic-bezier(0.22, 1.18, 0.36, 1), 
+                        opacity 0.28s ease,
+                        filter 0.28s ease;
         }
         .floating-yt-player.yt-closed {
             opacity: 0;
-            transform: scale(0.75) translateY(-16px);
+            transform: scale(0.08) translateY(14px);
+            filter: blur(3px);
             pointer-events: none;
         }
         .floating-yt-player.yt-open {
             opacity: 1;
             transform: scale(1) translateY(0);
+            filter: blur(0px);
+            pointer-events: auto;
+        }
+
+        /* Floating Theme Picker Popover (Muncul dari ikon T-Shirt) */
+        .theme-popover {
+            transform-origin: right center;
+            transition: transform 0.32s cubic-bezier(0.22, 1.18, 0.36, 1), opacity 0.22s ease;
+        }
+        .theme-popover.popover-closed {
+            opacity: 0;
+            transform: scale(0.75) translateX(14px);
+            pointer-events: none;
+        }
+        .theme-popover.popover-open {
+            opacity: 1;
+            transform: scale(1) translateX(0);
             pointer-events: auto;
         }
 
@@ -167,7 +188,7 @@
 </head>
 <body class="flex flex-col h-screen">
 
-    <!-- Top Navbar -->
+    <!-- Top Navbar (Bersih & Artistik) -->
     <header class="theme-header bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-2">
         <div class="flex items-center gap-3 shrink-0">
             <span class="theme-brand bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider">SINYOABE</span>
@@ -177,31 +198,11 @@
             </span>
         </div>
 
-        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden xl:block text-center max-w-md truncate">
+        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden lg:block text-center max-w-md truncate">
             "Stay Hungry, Stay Foolish." - Steve Jobs
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <!-- Tombol Ikon YouTube Music Player -->
-            <button id="ytNavBtn" onclick="toggleYoutubePlayer()" title="Buka Pemutar Musik YouTube"
-                class="bg-rose-600/20 hover:bg-rose-600/35 text-rose-400 border border-rose-500/40 px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition cursor-pointer relative">
-                <i class="fa-brands fa-youtube text-rose-500 text-sm"></i>
-                <span class="hidden md:inline font-medium">Music</span>
-                <span id="ytPlayingDot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            </button>
-
-            <!-- Pemilih 5 Tema Warna -->
-            <div class="flex items-center gap-1.5 bg-slate-950/60 border theme-border px-2 py-1 rounded text-xs mr-1" title="Ganti Tema Tampilan">
-                <i class="fa-solid fa-palette text-amber-400"></i>
-                <select id="themeSelector" onchange="applyTheme(this.value)" class="bg-transparent text-slate-200 outline-none cursor-pointer font-medium">
-                    <option value="midnight" class="bg-slate-900 text-white">1. Midnight Slate</option>
-                    <option value="cyberpunk" class="bg-slate-900 text-fuchsia-300">2. Cyberpunk Neon</option>
-                    <option value="emerald" class="bg-slate-900 text-emerald-300">3. Emerald Matrix</option>
-                    <option value="sunset" class="bg-slate-900 text-rose-300">4. Sakura Sunset</option>
-                    <option value="ocean" class="bg-slate-900 text-cyan-300">5. Ocean Cobalt</option>
-                </select>
-            </div>
-
             <span class="text-xs text-slate-400 mr-1 animate-export hidden sm:inline-flex">
                 export to <i class="fa-solid fa-arrow-right"></i>
             </span>
@@ -288,14 +289,91 @@
     </div>
 
     <!-- ===================================================================== -->
+    <!-- VERTICAL FLOATING DOCK ARTISTIK DI POJOK KANAN BAWAH                  -->
+    <!-- Urutan Atas ke Bawah: 1. YouTube Music  2. Tema (T-Shirt)  3. Chat WA -->
+    <!-- ===================================================================== -->
+    <div class="fixed bottom-5 right-5 z-40 flex flex-col items-center gap-3">
+        
+        <!-- 1. Ikon YouTube Music (Atas) -->
+        <button id="ytFloatingBtn" onclick="toggleYoutubePlayer()" title="YouTube Music Player"
+            class="w-12 h-12 rounded-full bg-[#FF0000] hover:bg-[#e00000] text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/20 relative">
+            <i class="fa-brands fa-youtube text-xl"></i>
+            <!-- Indikator lagu sedang aktif -->
+            <span id="ytPlayingDot" class="hidden absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full animate-ping"></span>
+        </button>
+
+        <!-- 2. Ikon T-Shirt Pemilih Tema (Tengah) + Popover Menu Tema -->
+        <div class="relative flex items-center">
+            <!-- Popover Pilihan 5 Tema (Muncul di sebelah kiri ikon T-Shirt) -->
+            <div id="themePopover" class="theme-popover popover-closed absolute right-15 bottom-0 w-48 theme-panel theme-border bg-slate-950/95 backdrop-blur-md border rounded-2xl p-2 shadow-2xl space-y-1 z-50">
+                <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b theme-border flex items-center justify-between">
+                    <span>Pilih Tema IDE</span>
+                    <i class="fa-solid fa-shirt text-xs" style="color: var(--text-accent)"></i>
+                </div>
+                <button onclick="selectThemeFromPopover('midnight')" id="theme-opt-midnight" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-slate-200 hover:bg-white/10 transition cursor-pointer">
+                    <span class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-indigo-500 border border-white/30"></span>
+                        Midnight Slate
+                    </span>
+                    <i class="fa-solid fa-check text-[10px] text-emerald-400 hidden theme-check"></i>
+                </button>
+                <button onclick="selectThemeFromPopover('cyberpunk')" id="theme-opt-cyberpunk" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-fuchsia-300 hover:bg-white/10 transition cursor-pointer">
+                    <span class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-fuchsia-500 border border-white/30"></span>
+                        Cyberpunk Neon
+                    </span>
+                    <i class="fa-solid fa-check text-[10px] text-emerald-400 hidden theme-check"></i>
+                </button>
+                <button onclick="selectThemeFromPopover('emerald')" id="theme-opt-emerald" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-emerald-300 hover:bg-white/10 transition cursor-pointer">
+                    <span class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 border border-white/30"></span>
+                        Emerald Matrix
+                    </span>
+                    <i class="fa-solid fa-check text-[10px] text-emerald-400 hidden theme-check"></i>
+                </button>
+                <button onclick="selectThemeFromPopover('sunset')" id="theme-opt-sunset" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-rose-300 hover:bg-white/10 transition cursor-pointer">
+                    <span class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 border border-white/30"></span>
+                        Sakura Sunset
+                    </span>
+                    <i class="fa-solid fa-check text-[10px] text-emerald-400 hidden theme-check"></i>
+                </button>
+                <button onclick="selectThemeFromPopover('ocean')" id="theme-opt-ocean" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-cyan-300 hover:bg-white/10 transition cursor-pointer">
+                    <span class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-sky-500 border border-white/30"></span>
+                        Ocean Cobalt
+                    </span>
+                    <i class="fa-solid fa-check text-[10px] text-emerald-400 hidden theme-check"></i>
+                </button>
+            </div>
+
+            <button id="themeFloatingBtn" onclick="toggleThemePopover()" title="Ganti Tema Tampilan"
+                class="theme-brand w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/25">
+                <i class="fa-solid fa-shirt text-lg"></i>
+            </button>
+        </div>
+
+        <!-- 3. Ikon WhatsApp Live Class Chat (Bawah) -->
+        <button id="waFloatingBtn" onclick="toggleChat()" title="Buka Live Class Chat"
+            class="w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/25 relative">
+            <i class="fa-brands fa-whatsapp text-3xl"></i>
+            <!-- Badge Jumlah Online -->
+            <span id="onlineBadgeNav" class="absolute -top-1 -left-1 bg-slate-900 text-emerald-400 border border-emerald-500/60 font-bold text-[10px] px-1.5 py-0.5 rounded-full shadow">0</span>
+            <!-- Titik Merah Pesan Baru -->
+            <span id="unreadDot" class="hidden absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full animate-ping"></span>
+        </button>
+
+    </div>
+
+    <!-- ===================================================================== -->
     <!-- PEMUTAR MUSIK YOUTUBE MELAYANG (BISA DI-DRAG & MINIMIZE TETAP NYALA)  -->
     <!-- ===================================================================== -->
-    <div id="floatingYoutubeModal" class="yt-closed fixed top-14 right-6 z-40 floating-yt-player">
+    <div id="floatingYoutubeModal" class="yt-closed fixed bottom-44 right-22 z-40 floating-yt-player">
         <!-- Header Drag Bar -->
         <div id="ytDragHandle" title="Seret untuk memindahkan pemutar musik"
             class="theme-toolbar bg-slate-900 px-3 py-2 border-b theme-border flex items-center justify-between cursor-move">
             <div class="flex items-center gap-1.5 text-xs font-bold text-white">
-                <i class="fa-brands fa-youtube text-rose-500 text-sm"></i>
+                <i class="fa-brands fa-youtube text-[#FF0000] text-sm"></i>
                 <span>Coding Music Player</span>
             </div>
             <div class="flex items-center gap-1.5">
@@ -317,7 +395,7 @@
                     onkeydown="if(event.key==='Enter'){event.preventDefault(); loadYoutubeFromInput();}"
                     class="theme-surface theme-border flex-1 bg-slate-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 border outline-none focus:border-rose-500">
                 <button onclick="loadYoutubeFromInput()"
-                    class="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer transition shrink-0">
+                    class="bg-[#FF0000] hover:bg-[#e00000] text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer transition shrink-0">
                     Putar
                 </button>
             </div>
@@ -346,18 +424,6 @@
             </div>
         </div>
     </div>
-
-    <!-- ===================================================================== -->
-    <!-- TOMBOL FLOATING MIRIP WHATSAPP DI POJOK KANAN BAWAH                   -->
-    <!-- ===================================================================== -->
-    <button id="waFloatingBtn" onclick="toggleChat()" title="Buka Live Class Chat"
-        class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/20">
-        <i class="fa-brands fa-whatsapp text-3xl"></i>
-        <!-- Badge Jumlah Online -->
-        <span id="onlineBadgeNav" class="absolute -top-1 -left-1 bg-slate-900 text-emerald-400 border border-emerald-500/60 font-bold text-[10px] px-1.5 py-0.5 rounded-full shadow">0</span>
-        <!-- Titik Merah Pesan Baru -->
-        <span id="unreadDot" class="hidden absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full animate-ping"></span>
-    </button>
 
     <!-- ===================================================================== -->
     <!-- MODAL LOGIN MELAYANG SIMPLE (ANIMASI MACOS SHEET)                     -->
@@ -397,7 +463,7 @@
     <!-- ===================================================================== -->
     <!-- HAPE MELAYANG DRAGGABLE DENGAN ANIMASI GENIE / DOCK MACOS (SUUUTTT)   -->
     <!-- ===================================================================== -->
-    <div id="floatingPhoneChat" class="mac-dock-closed fixed bottom-22 right-6 z-50 floating-chat-phone">
+    <div id="floatingPhoneChat" class="mac-dock-closed fixed bottom-6 right-22 z-50 floating-chat-phone">
         
         <!-- Notch & Drag Handle Bar -->
         <div id="phoneDragHandle" title="Klik & seret untuk memindahkan posisi HP"
@@ -487,7 +553,7 @@
 
     <script>
         // ==========================================
-        // 5 TEMA WARNA (EDITOR, TOMBOL, GARIS, HP)
+        // 5 TEMA WARNA + POPOVER IKON T-SHIRT
         // ==========================================
         const THEMES = {
             midnight: {
@@ -577,8 +643,41 @@
             }
         };
 
+        let isThemePopoverOpen = false;
+        function toggleThemePopover() {
+            const pop = document.getElementById('themePopover');
+            isThemePopoverOpen = !isThemePopoverOpen;
+            if (isThemePopoverOpen) {
+                pop.classList.remove('popover-closed');
+                pop.classList.add('popover-open');
+            } else {
+                pop.classList.remove('popover-open');
+                pop.classList.add('popover-closed');
+            }
+        }
+
+        function selectThemeFromPopover(themeKey) {
+            applyTheme(themeKey);
+            isThemePopoverOpen = false;
+            const pop = document.getElementById('themePopover');
+            pop.classList.remove('popover-open');
+            pop.classList.add('popover-closed');
+        }
+
+        // Tutup popover tema jika klik di luar area tombol T-Shirt & popover
+        document.addEventListener('click', (e) => {
+            if (!isThemePopoverOpen) return;
+            const pop = document.getElementById('themePopover');
+            const btn = document.getElementById('themeFloatingBtn');
+            if (!pop.contains(e.target) && !btn.contains(e.target)) {
+                isThemePopoverOpen = false;
+                pop.classList.remove('popover-open');
+                pop.classList.add('popover-closed');
+            }
+        });
+
         // ==========================================
-        // YOUTUBE MUSIC PLAYER LOGIC (DRAGGABLE)
+        // YOUTUBE MUSIC PLAYER LOGIC (DRAGGABLE + GENIE)
         // ==========================================
         let isYtOpen = false;
         let currentYtVideoId = '';
@@ -592,13 +691,27 @@
             return match ? match[1] : null;
         }
 
+        function updateYtGenieOrigin() {
+            const ytModal = document.getElementById('floatingYoutubeModal');
+            const ytBtn = document.getElementById('ytFloatingBtn');
+            if (!ytModal || !ytBtn) return;
+
+            const btnRect = ytBtn.getBoundingClientRect();
+            const btnCenterX = btnRect.left + btnRect.width / 2;
+            const btnCenterY = btnRect.top + btnRect.height / 2;
+
+            const originX = btnCenterX - ytModal.offsetLeft;
+            const originY = btnCenterY - ytModal.offsetTop;
+            ytModal.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+
         function toggleYoutubePlayer() {
             const modal = document.getElementById('floatingYoutubeModal');
+            updateYtGenieOrigin();
             isYtOpen = !isYtOpen;
             if (isYtOpen) {
                 modal.classList.remove('yt-closed');
                 modal.classList.add('yt-open');
-                // Jika belum pernah diputar, otomatis muat Lofi Girl Radio
                 if (!currentYtVideoId) {
                     playYoutubePreset('jfKfPfyJRdk', false);
                 }
@@ -630,6 +743,7 @@
             currentYtVideoId = '';
             document.getElementById('ytIframe').src = '';
             document.getElementById('ytPlayingDot').classList.add('hidden');
+            updateYtGenieOrigin();
             isYtOpen = false;
             const modal = document.getElementById('floatingYoutubeModal');
             modal.classList.remove('yt-open');
@@ -704,8 +818,12 @@ print("Coding Senpai WSL Backend Active!")`;
             });
             editor.setTheme(theme.aceTheme);
             localStorage.setItem('senpai_ide_theme', themeKey);
-            const selector = document.getElementById('themeSelector');
-            if (selector) selector.value = themeKey;
+
+            // Tandai tema aktif di menu popover ikon T-Shirt
+            document.querySelectorAll('#themePopover .theme-check').forEach(el => el.classList.add('hidden'));
+            const activeCheck = document.querySelector(`#theme-opt-${themeKey} .theme-check`);
+            if (activeCheck) activeCheck.classList.remove('hidden');
+
             if (!silent) {
                 logTerminal(`[INFO] Tema tampilan diubah ke: ${theme.name}`);
             }
@@ -884,7 +1002,7 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         makeElementDraggable('floatingPhoneChat', 'phoneDragHandle', updateGenieOrigin);
-        makeElementDraggable('floatingYoutubeModal', 'ytDragHandle');
+        makeElementDraggable('floatingYoutubeModal', 'ytDragHandle', updateYtGenieOrigin);
 
         // ==========================================
         // TEMPORARY ATTACHMENT (AUTO-EXPIRE 5 MENIT)
