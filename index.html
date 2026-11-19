@@ -86,7 +86,6 @@
                         filter 0.32s ease;
         }
 
-        /* State tertutup: tersedot kecil ke arah ikon WhatsApp */
         .floating-chat-phone.mac-dock-closed {
             opacity: 0;
             transform: scale(0.06) skewX(-6deg) translateY(18px);
@@ -97,7 +96,6 @@
                         filter 0.26s ease-in;
         }
 
-        /* State terbuka: meluncur mulus (suuuttt) ke ukuran penuh */
         .floating-chat-phone.mac-dock-open {
             opacity: 1;
             transform: scale(1) skewX(0deg) translateY(0);
@@ -351,12 +349,30 @@
         <!-- Area Pesan Chat -->
         <div id="chatMessages" class="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs bg-slate-950/60">
             <div id="emptyChatNotice" class="text-center text-[11px] text-slate-500 my-6">
-                Ruang obrolan kelas aktif.<br>Seret bagian atas HP ini untuk memindah posisinya!
+                Ruang obrolan kelas aktif.<br>Lampiran file otomatis terhapus dalam 5 menit.
             </div>
         </div>
 
-        <!-- Input Chat Bawah -->
+        <!-- Bar Pratinjau Lampiran Temporary (Jika ada file dipilih) -->
+        <div id="pendingAttachmentBar" class="hidden theme-panel bg-slate-950 px-3 py-1.5 border-t theme-border flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-1.5 truncate text-amber-300">
+                <i class="fa-solid fa-hourglass-half animate-pulse"></i>
+                <span id="pendingFileName" class="truncate max-w-[190px] font-medium">file.txt</span>
+                <span id="pendingFileSize" class="text-[10px] text-slate-400"></span>
+            </div>
+            <button type="button" onclick="clearPendingAttachment()" class="text-rose-400 hover:text-rose-300 cursor-pointer px-1" title="Batal lampiran">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Input Chat Bawah + Tombol Attach File Temporary -->
         <div class="theme-toolbar p-2.5 bg-slate-900 border-t border-slate-800 flex gap-1.5 items-center">
+            <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelect(event)">
+            <button type="button" onclick="document.getElementById('chatFileInput').click()"
+                title="Lampirkan File Temporary (Otomatis terhapus dalam 5 menit, Maks 1.5MB)"
+                class="w-8 h-8 rounded-full theme-surface bg-slate-800 hover:opacity-80 text-slate-300 hover:text-[#25D366] border theme-border flex items-center justify-center cursor-pointer transition shrink-0">
+                <i class="fa-solid fa-paperclip text-xs"></i>
+            </button>
             <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off"
                 onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}"
                 class="theme-surface theme-border flex-1 bg-slate-800 text-white text-xs rounded-full px-3.5 py-2 border border-slate-700 focus:border-[#25D366] outline-none">
@@ -370,6 +386,12 @@
         <div class="theme-toolbar bg-slate-900 py-1.5 flex justify-center">
             <div class="w-24 h-1 bg-slate-600 rounded-full"></div>
         </div>
+    </div>
+
+    <!-- Modal Preview Gambar Full (Selama Belum Expired 5 Menit) -->
+    <div id="imageLightboxModal" onclick="closeImageLightbox()" class="hidden fixed inset-0 z-[60] bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-4 cursor-zoom-out">
+        <img id="lightboxImg" src="" alt="Preview" class="max-w-[90vw] max-h-[80vh] rounded-xl shadow-2xl border border-slate-700">
+        <p id="lightboxCaption" class="text-xs text-slate-300 mt-3 bg-slate-900/90 px-3 py-1 rounded-full border border-slate-700"></p>
     </div>
 
     <script>
@@ -641,7 +663,6 @@ print("Coding Senpai WSL Backend Active!")`;
             const waCenterX = waRect.left + waRect.width / 2;
             const waCenterY = waRect.top + waRect.height / 2;
 
-            // Hitung koordinat HP saat skala 1 (posisi asli tanpa transform)
             const currentLeft = phoneEl.offsetLeft;
             const currentTop = phoneEl.offsetTop;
 
@@ -658,7 +679,6 @@ print("Coding Senpai WSL Backend Active!")`;
 
             function onStart(clientX, clientY) {
                 isDragging = true;
-                // Matikan transisi sementara saat ditarik agar responsif 1:1 mengikuti kursor
                 phoneEl.style.transition = 'none';
                 const rect = phoneEl.getBoundingClientRect();
                 phoneEl.style.bottom = 'auto';
@@ -689,7 +709,6 @@ print("Coding Senpai WSL Backend Active!")`;
             function onEnd() {
                 if (!isDragging) return;
                 isDragging = false;
-                // Kembalikan transisi macOS Genie & perbarui titik asal arah ikon WA
                 phoneEl.style.transition = '';
                 updateGenieOrigin();
             }
@@ -713,6 +732,109 @@ print("Coding Senpai WSL Backend Active!")`;
             }, { passive: true });
             window.addEventListener('touchend', onEnd);
         })();
+
+        // ==========================================
+        // TEMPORARY ATTACHMENT (AUTO-EXPIRE 5 MENIT)
+        // ==========================================
+        const TEMP_FILE_TTL_MS = 5 * 60 * 1000; // 5 menit (300.000 ms)
+        const MAX_FILE_BYTES = 1.5 * 1024 * 1024; // Maks 1.5 MB agar aman lewat WebSocket MQTT
+        let pendingAttachment = null;
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function handleChatFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > MAX_FILE_BYTES) {
+                alert(`Ukuran file maksimal 1.5 MB agar terkirim cepat di chat.\nUkuran file kamu: ${formatBytes(file.size)}`);
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                pendingAttachment = {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type || 'application/octet-stream',
+                    dataUrl: e.target.result
+                };
+                document.getElementById('pendingFileName').textContent = file.name;
+                document.getElementById('pendingFileSize').textContent = `(${formatBytes(file.size)})`;
+                document.getElementById('pendingAttachmentBar').classList.remove('hidden');
+                document.getElementById('chatInput').focus();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearPendingAttachment() {
+            pendingAttachment = null;
+            document.getElementById('chatFileInput').value = '';
+            document.getElementById('pendingAttachmentBar').classList.add('hidden');
+        }
+
+        function downloadTempAttachment(msgId) {
+            const msg = messageBuffer.find(m => m.id === msgId);
+            if (!msg || !msg.attachment || msg.attachment.expired || Date.now() >= msg.attachment.expiresAt) {
+                alert('Maaf, file temporary ini sudah kedaluwarsa dan terhapus otomatis.');
+                return;
+            }
+            const a = document.createElement('a');
+            a.href = msg.attachment.dataUrl;
+            a.download = msg.attachment.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function openImageLightbox(msgId) {
+            const msg = messageBuffer.find(m => m.id === msgId);
+            if (!msg || !msg.attachment || msg.attachment.expired || Date.now() >= msg.attachment.expiresAt) return;
+            document.getElementById('lightboxImg').src = msg.attachment.dataUrl;
+            document.getElementById('lightboxCaption').textContent = `${msg.attachment.name} • Dikirim oleh ${msg.name}`;
+            document.getElementById('imageLightboxModal').classList.remove('hidden');
+        }
+
+        function closeImageLightbox() {
+            document.getElementById('imageLightboxModal').classList.add('hidden');
+            document.getElementById('lightboxImg').src = '';
+        }
+
+        // Interval 1 detik untuk menghitung mundur & menghapus file yang lewat 5 menit
+        setInterval(() => {
+            const now = Date.now();
+            let hasNewlyExpired = false;
+
+            messageBuffer.forEach(msg => {
+                if (msg.attachment && !msg.attachment.expired) {
+                    const remaining = msg.attachment.expiresAt - now;
+                    if (remaining <= 0) {
+                        // Hapus data base64 file dari memori secara permanen
+                        msg.attachment.expired = true;
+                        msg.attachment.dataUrl = null;
+                        hasNewlyExpired = true;
+                    } else {
+                        // Update label countdown detik berjalan pada elemen jika ada di DOM
+                        const timerEl = document.getElementById(`timer_${msg.id}`);
+                        if (timerEl) {
+                            const totalSec = Math.ceil(remaining / 1000);
+                            const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+                            const secs = String(totalSec % 60).padStart(2, '0');
+                            timerEl.textContent = `${mins}:${secs}`;
+                        }
+                    }
+                }
+            });
+
+            if (hasNewlyExpired) {
+                renderAllMessages();
+            }
+        }, 1000);
 
         // ==========================================
         // MQTT REAL-TIME CHAT + LEAVE + MIDNIGHT CLEAR
@@ -918,7 +1040,6 @@ print("Coding Senpai WSL Backend Active!")`;
             phoneChat.classList.add('mac-dock-closed');
         }
 
-        // Klik tombol logo WhatsApp di pojok kanan bawah
         function toggleChat() {
             if (!myProfile) {
                 document.getElementById('chatLoginModal').classList.remove('mac-modal-hidden');
@@ -956,7 +1077,6 @@ print("Coding Senpai WSL Backend Active!")`;
             };
             localStorage.setItem('senpai_mqtt_profile', JSON.stringify(myProfile));
 
-            // Tutup modal login & luncurkan Hape Chat ala macOS Dock
             closeLoginModal();
             openPhoneWithGenie();
 
@@ -974,6 +1094,7 @@ print("Coding Senpai WSL Backend Active!")`;
             delete onlineUsersMap[myPeerId];
             myProfile = null;
             localStorage.removeItem('senpai_mqtt_profile');
+            clearPendingAttachment();
 
             document.getElementById('loginNameInput').value = '';
             document.getElementById('loginOriginInput').value = '';
@@ -1019,8 +1140,14 @@ print("Coding Senpai WSL Backend Active!")`;
         });
 
         function addMessageToUI(id, msg) {
-            if (!msg || !msg.text || renderedMsgIds.has(id)) return;
+            if (!msg || (!msg.text && !msg.attachment) || renderedMsgIds.has(id)) return;
             renderedMsgIds.add(id);
+
+            // Cek jika lampiran sudah melewati waktu kedaluwarsa saat diterima
+            if (msg.attachment && Date.now() >= msg.attachment.expiresAt) {
+                msg.attachment.expired = true;
+                msg.attachment.dataUrl = null;
+            }
 
             messageBuffer.push({ id, ...msg });
             messageBuffer.sort((a, b) => (a.ts || 0) - (b.ts || 0));
@@ -1039,6 +1166,8 @@ print("Coding Senpai WSL Backend Active!")`;
                 container.innerHTML = '';
             }
 
+            const now = Date.now();
+
             messageBuffer.forEach(msg => {
                 if (msg.type === 'system') {
                     const sysEl = document.createElement('div');
@@ -1053,6 +1182,59 @@ print("Coding Senpai WSL Backend Active!")`;
                 bubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
                 const rankPrefix = msg.rank ? `#${msg.rank} ` : '';
                 const originTag = msg.origin ? ` (${escapeHTML(msg.origin)})` : '';
+
+                // Bangun HTML Lampiran Temporary (jika ada)
+                let attachmentHTML = '';
+                if (msg.attachment) {
+                    const remaining = msg.attachment.expiresAt - now;
+                    if (msg.attachment.expired || remaining <= 0) {
+                        msg.attachment.expired = true;
+                        msg.attachment.dataUrl = null;
+                        attachmentHTML = `
+                            <div class="mb-1.5 px-2.5 py-2 rounded-xl bg-black/30 border border-white/10 text-[11px] text-slate-400 italic flex items-center gap-2">
+                                <i class="fa-solid fa-ban text-rose-400"></i>
+                                <span>File <strong>${escapeHTML(msg.attachment.name)}</strong> telah terhapus otomatis (5 menit berlalu).</span>
+                            </div>
+                        `;
+                    } else {
+                        const totalSec = Math.ceil(remaining / 1000);
+                        const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+                        const secs = String(totalSec % 60).padStart(2, '0');
+                        const isImage = msg.attachment.type && msg.attachment.type.startsWith('image/');
+
+                        const imagePreview = isImage ? `
+                            <img src="${msg.attachment.dataUrl}" onclick="openImageLightbox('${msg.id}')"
+                                title="Klik untuk perbesar gambar"
+                                class="w-full max-h-40 object-cover rounded-lg mb-1.5 cursor-zoom-in border border-white/15">
+                        ` : '';
+
+                        attachmentHTML = `
+                            <div class="mb-1.5 p-2 rounded-xl bg-black/35 border border-white/15 space-y-1.5">
+                                ${imagePreview}
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-1.5 truncate">
+                                        <i class="fa-solid ${isImage ? 'fa-image text-sky-300' : 'fa-file-lines text-amber-300'}"></i>
+                                        <div class="truncate">
+                                            <div class="text-[11px] font-semibold truncate max-w-[140px]">${escapeHTML(msg.attachment.name)}</div>
+                                            <div class="text-[9px] opacity-75">${formatBytes(msg.attachment.size)}</div>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="downloadTempAttachment('${msg.id}')"
+                                        title="Download file sebelum kedaluwarsa"
+                                        class="bg-white/15 hover:bg-white/25 text-white px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer shrink-0 transition">
+                                        <i class="fa-solid fa-download"></i> Unduh
+                                    </button>
+                                </div>
+                                <div class="text-[9px] text-amber-300/90 flex items-center justify-between border-t border-white/10 pt-1">
+                                    <span><i class="fa-solid fa-stopwatch mr-1"></i>Terhapus otomatis dalam:</span>
+                                    <span id="timer_${msg.id}" class="font-mono font-bold">${mins}:${secs}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                const textHTML = msg.text ? `<div>${escapeHTML(msg.text)}</div>` : '';
                 
                 bubble.innerHTML = `
                     <span class="text-[10px] text-slate-400 mb-0.5 px-1">
@@ -1063,7 +1245,8 @@ print("Coding Senpai WSL Backend Active!")`;
                         ? 'bg-[#005c4b] text-white rounded-br-none border border-emerald-700/40' 
                         : 'theme-surface bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'
                     }">
-                        ${escapeHTML(msg.text)}
+                        ${attachmentHTML}
+                        ${textHTML}
                     </div>
                 `;
                 container.appendChild(bubble);
@@ -1076,13 +1259,26 @@ print("Coding Senpai WSL Backend Active!")`;
             if (!myProfile) return;
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (!text) return;
+            if (!text && !pendingAttachment) return;
 
             input.value = '';
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const ts = Date.now();
             const msgId = `msg_${ts}_${Math.random().toString(36).substr(2, 6)}`;
+
+            let attachmentPayload = null;
+            if (pendingAttachment) {
+                attachmentPayload = {
+                    name: pendingAttachment.name,
+                    size: pendingAttachment.size,
+                    type: pendingAttachment.type,
+                    dataUrl: pendingAttachment.dataUrl,
+                    expiresAt: ts + TEMP_FILE_TTL_MS,
+                    expired: false
+                };
+                clearPendingAttachment();
+            }
 
             const msgData = {
                 id: msgId,
@@ -1091,6 +1287,7 @@ print("Coding Senpai WSL Backend Active!")`;
                 name: myProfile.name,
                 origin: myProfile.origin,
                 text: text,
+                attachment: attachmentPayload,
                 time: timeStr,
                 ts: ts
             };
