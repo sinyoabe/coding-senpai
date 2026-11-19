@@ -1945,6 +1945,190 @@
             };
         }
 
+        // Menggambar Matahari Terik Berwajah Anak Kecil (Terbit 2.2 detik -> berhenti besar di pojok kanan atas)
+        const SUN_RISE_DURATION = 130; // ~2.2 detik di 60fps
+
+        function drawSpringBabySun(ctx, W, H, dev, tick) {
+            const rightSpace = W - dev.right;
+            const targetX = !dev.isFull && rightSpace > 120
+                ? Math.min(W - 88, dev.right + rightSpace * 0.46)
+                : W - 92;
+            const targetY = 82;
+
+            const startY = H + 65;
+            const progress = Math.min(1, tick / SUN_RISE_DURATION);
+            const eased = 1 - Math.pow(1 - progress, 3);
+
+            const sunX = targetX;
+            const sunY = startY + (targetY - startY) * eased;
+            const sunR = 48;
+            const shineIntensity = progress >= 1 ? 1 : 0.4 + progress * 0.6;
+
+            ctx.save();
+            ctx.translate(sunX, sunY);
+
+            // Pendaran cahaya terik berdenyut
+            const pulse = 1 + Math.sin(tick * 0.1) * 0.12;
+            const haloGrad = ctx.createRadialGradient(0, 0, sunR * 0.6, 0, 0, sunR * 2.7 * pulse);
+            haloGrad.addColorStop(0, `rgba(254, 240, 138, ${0.92 * shineIntensity})`);
+            haloGrad.addColorStop(0.45, `rgba(251, 191, 36, ${0.5 * shineIntensity})`);
+            haloGrad.addColorStop(1, 'rgba(249, 115, 22, 0)');
+            ctx.fillStyle = haloGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, sunR * 2.7 * pulse, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sinar matahari terik panjang berputar
+            ctx.save();
+            ctx.rotate(tick * 0.028);
+            const rayCount = 16;
+            const extraRayLen = progress >= 1 ? 34 : 20;
+            for (let i = 0; i < rayCount; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI * 2 / rayCount) * i);
+                const waveLen = Math.sin(tick * 0.14 + i) * 7;
+                const rayGrad = ctx.createLinearGradient(0, -sunR + 2, 0, -sunR - extraRayLen - waveLen);
+                rayGrad.addColorStop(0, '#f59e0b');
+                rayGrad.addColorStop(0.55, '#fde047');
+                rayGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+
+                ctx.fillStyle = rayGrad;
+                ctx.beginPath();
+                ctx.moveTo(-8.5, -sunR + 3);
+                ctx.lineTo(0, -sunR - extraRayLen - waveLen);
+                ctx.lineTo(8.5, -sunR + 3);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // Sinar sekunder berputar berlawanan arah
+            ctx.save();
+            ctx.rotate(-tick * 0.038);
+            for (let i = 0; i < 14; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI * 2 / 14) * i);
+                ctx.strokeStyle = `rgba(254, 249, 195, ${0.85 * shineIntensity})`;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(0, -sunR - 5);
+                ctx.lineTo(0, -sunR - 24);
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // Lingkaran Matahari Emas Hangat
+            const coreGrad = ctx.createRadialGradient(-8, -8, 6, 0, 0, sunR);
+            coreGrad.addColorStop(0, '#fef9c3');
+            coreGrad.addColorStop(0.55, '#fde047');
+            coreGrad.addColorStop(0.88, '#facc15');
+            coreGrad.addColorStop(1, '#f59e0b');
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, sunR, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Wajah Anak Kecil / Bayi Ceria (Ala Teletubbies)
+            const headTilt = Math.sin(tick * 0.045) * 0.07;
+            ctx.save();
+            ctx.rotate(headTilt);
+
+            const faceGrad = ctx.createRadialGradient(0, -3, 6, 0, 3, sunR * 0.76);
+            faceGrad.addColorStop(0, '#ffedd5');
+            faceGrad.addColorStop(0.7, '#fed7aa');
+            faceGrad.addColorStop(1, 'rgba(253, 186, 116, 0.35)');
+            ctx.fillStyle = faceGrad;
+            ctx.beginPath();
+            ctx.arc(0, 3, sunR * 0.74, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Jambul rambut bayi
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = 2.8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-3, -28);
+            ctx.quadraticCurveTo(3, -38, 9, -31);
+            ctx.moveTo(2, -28);
+            ctx.quadraticCurveTo(9, -37, 13, -28);
+            ctx.stroke();
+
+            // Alis ceria
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(-13, -13, 6.5, Math.PI * 1.15, Math.PI * 1.85);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(13, -13, 6.5, Math.PI * 1.15, Math.PI * 1.85);
+            ctx.stroke();
+
+            // Mata berbinar (sesekali berkedip)
+            const isBlinking = Math.sin(tick * 0.05) > 0.96;
+            if (isBlinking) {
+                ctx.strokeStyle = '#451a03';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(-13, -6, 5.5, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(13, -6, 5.5, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-13, -6, 6.2, 0, Math.PI * 2);
+                ctx.arc(13, -6, 6.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#291509';
+                ctx.beginPath();
+                ctx.arc(-12.4, -6, 3.8, 0, Math.PI * 2);
+                ctx.arc(13.6, -6, 3.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-13.8, -7.8, 1.5, 0, Math.PI * 2);
+                ctx.arc(12.2, -7.8, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Hidung mungil & pipi merona
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(0, 2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.38)';
+            ctx.beginPath();
+            ctx.ellipse(-20, 5, 7, 4.6, 0, 0, Math.PI * 2);
+            ctx.ellipse(20, 5, 7, 4.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Senyum lebar tertawa
+            ctx.fillStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.arc(0, 9.5, 11, 0.08 * Math.PI, 0.92 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#fda4af';
+            ctx.beginPath();
+            ctx.ellipse(0, 16, 5.8, 3.4, 0, Math.PI, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+            ctx.restore();
+        }
+
         // Menggambar kupu-kupu cantik hinggap di sudut kanan atas bingkai Phone/Tablet
         function drawPerchedButterfly(ctx, dev, tick) {
             if (dev.isFull) return;
@@ -2140,7 +2324,7 @@
                 drawTaroLeafShelter(seasonCtx, W, H, dev, seasonTick);
 
             } else if (mode === 'spring') {
-                // Tahap 1: Matahari terbit terlebih dahulu sampai berhenti sempurna di pojok kanan atas
+                // Tahap 1 (0 - 2.2 detik): Matahari terbit dari bawah ke pojok kanan atas
                 drawSpringBabySun(seasonCtx, W, H, dev, seasonTick);
 
                 // Hamparan rumput lembut di bawah preview
@@ -2150,36 +2334,39 @@
                 seasonCtx.fillStyle = grad;
                 seasonCtx.fillRect(0, H - 35, W, 35);
 
-                // Tahap 2: Setelah matahari terbit sempurna, bunga-bunga mulai tumbuh dan bermekaran
+                // Tahap 2 (detik ke-2.2 s/d ke-5.5): Bunga-bunga langsung tumbuh & bermekaran cepat
                 const sunFinishedRising = seasonTick >= SUN_RISE_DURATION;
 
-                springFlowers.forEach(f => {
+                springFlowers.forEach((f, idx) => {
                     if (sunFinishedRising) {
                         f.tick++;
-                        if (f.tick > f.delay) {
+                        const fastDelay = idx * 2;
+                        if (f.tick > fastDelay) {
                             if (f.currentStemH < f.maxStemH) {
-                                f.currentStemH += (f.maxStemH - f.currentStemH) * 0.055;
+                                f.currentStemH += (f.maxStemH - f.currentStemH) * 0.11;
                             }
-                            if (f.currentStemH > f.maxStemH * 0.65 && f.currentBloom < f.maxBloom) {
-                                f.currentBloom += (f.maxBloom - f.currentBloom) * 0.065;
+                            if (f.currentStemH > f.maxStemH * 0.45 && f.currentBloom < f.maxBloom) {
+                                f.currentBloom += (f.maxBloom - f.currentBloom) * 0.13;
                             }
                         }
                     }
 
-                    const sway = Math.sin(f.tick * 0.035 + f.swayOffset) * 4;
+                    const sway = Math.sin((seasonTick * 0.04) + f.swayOffset) * 4;
                     const baseX = f.x;
                     const baseY = H;
                     const topX = baseX + sway;
                     const topY = H - f.currentStemH;
 
-                    seasonCtx.beginPath();
-                    seasonCtx.moveTo(baseX, baseY);
-                    seasonCtx.quadraticCurveTo(baseX + sway * 0.4, H - f.currentStemH * 0.5, topX, topY);
-                    seasonCtx.strokeStyle = '#22c55e';
-                    seasonCtx.lineWidth = 2.4;
-                    seasonCtx.stroke();
+                    if (f.currentStemH > 1) {
+                        seasonCtx.beginPath();
+                        seasonCtx.moveTo(baseX, baseY);
+                        seasonCtx.quadraticCurveTo(baseX + sway * 0.4, H - f.currentStemH * 0.5, topX, topY);
+                        seasonCtx.strokeStyle = '#22c55e';
+                        seasonCtx.lineWidth = 2.5;
+                        seasonCtx.stroke();
+                    }
 
-                    if (f.currentStemH > 22) {
+                    if (f.currentStemH > 20) {
                         seasonCtx.fillStyle = '#4ade80';
                         seasonCtx.beginPath();
                         seasonCtx.ellipse(baseX + sway * 0.4 + 6, H - f.currentStemH * 0.45, 7, 3.2, -0.4, 0, Math.PI * 2);
@@ -2190,7 +2377,7 @@
                         seasonCtx.save();
                         seasonCtx.translate(topX, topY);
                         for (let i = 0; i < f.petals; i++) {
-                            const rot = (Math.PI * 2 / f.petals) * i + Math.sin(f.tick * 0.02) * 0.08;
+                            const rot = (Math.PI * 2 / f.petals) * i + Math.sin(seasonTick * 0.025) * 0.08;
                             seasonCtx.save();
                             seasonCtx.rotate(rot);
                             seasonCtx.beginPath();
