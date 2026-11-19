@@ -42,6 +42,26 @@
         .theme-btn-secondary { background-color: var(--accent-secondary) !important; transition: all 0.3s ease; }
         .theme-surface { background-color: var(--bg-surface) !important; border-color: var(--border-color) !important; }
 
+        /* Tombol Outline Segitiga Play di Tengah Pembatas Panel */
+        .center-play-btn {
+            background-color: rgba(2, 6, 23, 0.72);
+            backdrop-filter: blur(6px);
+            border: 2px solid var(--text-accent);
+            color: var(--text-accent);
+            box-shadow: 0 0 18px var(--accent-glow), inset 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s cubic-bezier(0.22, 1.15, 0.36, 1);
+        }
+        .center-play-btn:hover {
+            background-color: var(--accent-primary);
+            border-color: #ffffff;
+            color: #ffffff;
+            transform: translate(-50%, -50%) scale(1.14);
+            box-shadow: 0 0 26px var(--accent-glow);
+        }
+        .center-play-btn:active {
+            transform: translate(-50%, -50%) scale(0.94);
+        }
+
         #editor { width: 100%; height: calc(100vh - 230px); font-size: 15px; }
         
         .phone-frame { 
@@ -67,7 +87,7 @@
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
 
         /* =========================================================
-           SIRI RAINBOW ORB + HOVER EXPAND "JREETT" KE ATAS
+           SIRI RAINBOW ORB POLOS + HOVER EXPAND "JREETT" KE ATAS
            ========================================================= */
         @keyframes siriSpin {
             0% { transform: rotate(0deg) scale(1); }
@@ -153,7 +173,7 @@
             flex-direction: column;
             user-select: none;
             will-change: transform, opacity, filter;
-            transform-origin: bottom right;
+            transform-origin: right center;
             transition: transform 0.44s cubic-bezier(0.22, 1.18, 0.36, 1), 
                         opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
                         filter 0.32s ease;
@@ -161,7 +181,7 @@
 
         .floating-chat-phone.mac-dock-closed {
             opacity: 0;
-            transform: scale(0.06) skewX(-6deg) translateY(18px);
+            transform: scale(0.06) skewX(-6deg) translateX(18px);
             filter: blur(4px);
             pointer-events: none;
             transition: transform 0.34s cubic-bezier(0.4, 0, 0.85, 0.15), 
@@ -171,7 +191,7 @@
 
         .floating-chat-phone.mac-dock-open {
             opacity: 1;
-            transform: scale(1) skewX(0deg) translateY(0);
+            transform: scale(1) skewX(0deg) translateX(0);
             filter: blur(0px);
             pointer-events: auto;
         }
@@ -186,20 +206,20 @@
             overflow: hidden;
             user-select: none;
             will-change: transform, opacity, filter;
-            transform-origin: bottom right;
+            transform-origin: right center;
             transition: transform 0.42s cubic-bezier(0.22, 1.18, 0.36, 1), 
                         opacity 0.28s ease,
                         filter 0.28s ease;
         }
         .floating-yt-player.yt-closed {
             opacity: 0;
-            transform: scale(0.08) translateY(14px);
+            transform: scale(0.08) translateX(14px);
             filter: blur(3px);
             pointer-events: none;
         }
         .floating-yt-player.yt-open {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: scale(1) translateX(0);
             filter: blur(0px);
             pointer-events: auto;
         }
@@ -261,7 +281,7 @@
 </head>
 <body class="flex flex-col h-screen">
 
-    <!-- Top Navbar (Bersih & Artistik) -->
+    <!-- Top Navbar -->
     <header class="theme-header bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-2">
         <div class="flex items-center gap-3 shrink-0">
             <span class="theme-brand bg-indigo-600 text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider">SINYOABE</span>
@@ -288,9 +308,15 @@
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <div class="flex flex-1 overflow-hidden">
+    <!-- Main Workspace (Relative untuk posisi Tombol Play Outline di Tengah Garis Pembatas) -->
+    <div class="flex flex-1 overflow-hidden relative">
         
+        <!-- TOMBOL JALANKAN (OUTLINE + SEGITIGA PLAY) DI TENGAH PEMBATAS PANEL -->
+        <button onclick="runCode()" title="Jalankan Kode HTML"
+            class="center-play-btn fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer">
+            <i class="fa-solid fa-play text-base ml-0.5"></i>
+        </button>
+
         <!-- Left Panel: Code Editor & Terminal -->
         <div class="w-1/2 flex flex-col border-r theme-panel theme-border bg-slate-950">
             <div class="theme-toolbar bg-slate-900 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
@@ -308,9 +334,6 @@
                         <option value="15px">Font: 15px</option>
                         <option value="18px">Font: 18px</option>
                     </select>
-                    <button onclick="runCode()" class="theme-btn-accent bg-blue-600 hover:opacity-90 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
-                        <i class="fa-solid fa-play"></i> Jalankan
-                    </button>
                     <button onclick="clearEditor()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded font-medium cursor-pointer">
                         <i class="fa-solid fa-trash"></i> Hapus Semua
                     </button>
@@ -362,11 +385,10 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- SIRI RAINBOW ORB DOCK DI POJOK KANAN BAWAH                            -->
-    <!-- Normal: Hanya 1 lingkaran pelangi Siri (hemat ruang).                 -->
-    <!-- Hover: 3 Ikon terbuka "jreett" berjejer ke atas!                      -->
+    <!-- SIRI RAINBOW ORB DOCK DI KANAN-TENGAH LAYAR (POLOS TANPA NOTIFIKASI)  -->
+    <!-- Mudah dilihat di HP maupun Desktop; hover membuka 3 ikon ke atas.    -->
     <!-- ===================================================================== -->
-    <div id="siriDockWrapper" class="siri-dock-wrapper fixed bottom-5 right-5 z-40 flex flex-col items-center">
+    <div id="siriDockWrapper" class="siri-dock-wrapper fixed top-1/2 -translate-y-1/2 right-4 z-40 flex flex-col items-center">
         
         <!-- 3 Ikon yang Meluncur Mekar ke Atas Saat Hover -->
         <div class="siri-dock-stack flex flex-col items-center gap-3">
@@ -380,7 +402,7 @@
 
             <!-- 2. Ikon T-Shirt Pemilih Tema (Tengah) + Popover Menu Tema di Sebelah Kiri -->
             <div class="relative flex items-center">
-                <!-- Popover Pilihan 5 Tema (Digeser ke sebelah kiri ikon: right-16) -->
+                <!-- Popover Pilihan 5 Tema (Di sebelah kiri ikon: right-16) -->
                 <div id="themePopover" class="theme-popover popover-closed absolute right-16 top-1/2 -translate-y-1/2 w-52 theme-panel theme-border bg-slate-950/95 backdrop-blur-md border rounded-2xl p-2.5 shadow-2xl space-y-1 z-50">
                     <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b theme-border flex items-center justify-between">
                         <span>Pilih Tema IDE</span>
@@ -439,12 +461,9 @@
 
         </div>
 
-        <!-- BOLA SIRI PELANGI UTAMA (TAMPIL SAAT DIAM) -->
-        <button id="siriLauncherOrb" onclick="toggleSiriPin()" title="Arahkan kursor ke sini untuk membuka menu"
-            class="siri-orb w-14 h-14 rounded-full cursor-pointer border-2 border-white/40 transition-transform duration-300 hover:scale-110 active:scale-95 flex items-center justify-center relative">
-            <!-- Lencana mini jumlah online tetap terlihat meski dock sedang tertutup -->
-            <span id="siriOnlineMiniBadge" class="relative z-10 bg-slate-950/80 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-full border border-white/30 shadow">0</span>
-            <span id="siriUnreadDot" class="hidden absolute -top-0.5 -right-0.5 z-10 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full animate-ping"></span>
+        <!-- BOLA SIRI PELANGI UTAMA (POLOS TANPA ANGKA/NOTIFIKASI) -->
+        <button id="siriLauncherOrb" onclick="toggleSiriPin()" title="Menu Pintas (YouTube, Tema, Chat)"
+            class="siri-orb w-14 h-14 rounded-full cursor-pointer border-2 border-white/40 transition-transform duration-300 hover:scale-110 active:scale-95">
         </button>
 
     </div>
@@ -452,7 +471,7 @@
     <!-- ===================================================================== -->
     <!-- PEMUTAR MUSIK YOUTUBE MELAYANG (BISA DI-DRAG & MINIMIZE TETAP NYALA)  -->
     <!-- ===================================================================== -->
-    <div id="floatingYoutubeModal" class="yt-closed fixed bottom-44 right-22 z-40 floating-yt-player">
+    <div id="floatingYoutubeModal" class="yt-closed fixed top-1/2 -translate-y-1/2 right-22 z-40 floating-yt-player">
         <!-- Header Drag Bar -->
         <div id="ytDragHandle" title="Seret untuk memindahkan pemutar musik"
             class="theme-toolbar bg-slate-900 px-3 py-2 border-b theme-border flex items-center justify-between cursor-move">
@@ -1036,6 +1055,7 @@ print("Coding Senpai WSL Backend Active!")`;
                 const rect = el.getBoundingClientRect();
                 el.style.bottom = 'auto';
                 el.style.right = 'auto';
+                el.style.transform = 'none';
                 el.style.left = rect.left + 'px';
                 el.style.top = rect.top + 'px';
 
@@ -1363,7 +1383,6 @@ print("Coding Senpai WSL Backend Active!")`;
 
             const count = activeList.length;
             document.getElementById('onlineBadgeNav').textContent = count;
-            document.getElementById('siriOnlineMiniBadge').textContent = count;
             document.getElementById('onlineCountHeader').textContent = `${count} Online`;
 
             const listEl = document.getElementById('onlineUsersList');
@@ -1390,13 +1409,10 @@ print("Coding Senpai WSL Backend Active!")`;
 
         function setUnreadIndicators(show) {
             const dot1 = document.getElementById('unreadDot');
-            const dot2 = document.getElementById('siriUnreadDot');
             if (show) {
                 dot1.classList.remove('hidden');
-                dot2.classList.remove('hidden');
             } else {
                 dot1.classList.add('hidden');
-                dot2.classList.add('hidden');
             }
         }
 
