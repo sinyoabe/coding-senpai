@@ -526,29 +526,33 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- JENDELA GEMINI AI CODING STUDIO MAX (CONTEXT-AWARE + SVG ANTI-RUSAK)  -->
+    <!-- JENDELA GEMINI AI CODING STUDIO (MULTI-ENGINE + GEMINI API KEY)       -->
     <!-- ===================================================================== -->
     <div id="floatingGeminiModal" class="gem-closed fixed top-1/2 -translate-y-1/2 right-22 z-50 floating-gemini-window">
         
         <!-- Header Drag Bar -->
         <div id="geminiDragHandle" title="Klik & seret untuk memindahkan jendela Gemini"
             class="bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 px-3.5 py-2.5 border-b border-purple-500/40 flex items-center justify-between cursor-move">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
                 <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
                     <path d="M12 2C12.4 7.2 16.8 11.6 22 12C16.8 12.4 12.4 16.8 12 22C11.6 16.8 7.2 12.4 2 12C7.2 11.6 11.6 7.2 12 2Z" fill="#C4B5FD"/>
                 </svg>
-                <span class="text-xs font-bold text-white tracking-wide">Gemini Coding Studio</span>
-                <span class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-semibold">Pro Max</span>
+                <span class="text-xs font-bold text-white tracking-wide">Gemini Studio</span>
+                <span id="geminiEngineBadge" class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-semibold">Auto-AI</span>
             </div>
 
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1">
+                <button onclick="toggleGeminiApiKeyPanel()" title="Pasang API Key Google Gemini (Opsional)"
+                    class="text-[10px] bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/35 cursor-pointer transition">
+                    <i class="fa-solid fa-key text-[9px]"></i>
+                </button>
                 <button onclick="resetGeminiSession()" title="Mulai Obrolan Baru"
-                    class="text-[10px] bg-white/10 hover:bg-white/20 text-slate-300 px-2 py-0.5 rounded border border-white/15 cursor-pointer transition">
+                    class="text-[10px] bg-white/10 hover:bg-white/20 text-slate-300 px-1.5 py-0.5 rounded border border-white/15 cursor-pointer transition">
                     <i class="fa-solid fa-rotate-right text-[9px]"></i> Baru
                 </button>
                 <button onclick="openGeminiPopupWindow()" title="Buka Akun Gemini Resmi di Jendela Sampingan"
-                    class="text-[10px] bg-white/10 hover:bg-white/20 text-sky-300 px-2 py-0.5 rounded border border-sky-400/30 cursor-pointer transition flex items-center gap-1">
-                    <i class="fa-solid fa-up-right-from-square text-[9px]"></i> Web Gemini
+                    class="text-[10px] bg-white/10 hover:bg-white/20 text-sky-300 px-1.5 py-0.5 rounded border border-sky-400/30 cursor-pointer transition flex items-center gap-1">
+                    <i class="fa-solid fa-up-right-from-square text-[9px]"></i> Web
                 </button>
                 <button onclick="toggleGeminiWindow()" title="Tutup Jendela Gemini"
                     class="text-slate-300 hover:text-white px-1 cursor-pointer">
@@ -557,11 +561,26 @@
             </div>
         </div>
 
-        <!-- Bar Aksi Cepat: Ambil dari Clipboard / Paste Kode dari Web Gemini -->
+        <!-- Panel Opsional Input API Key Google Gemini (Tersimpan di Browser) -->
+        <div id="geminiApiKeyBar" class="hidden bg-slate-950 px-3 py-2 border-b border-amber-500/30 space-y-1.5 text-[10px]">
+            <div class="flex items-center justify-between text-amber-300 font-semibold">
+                <span><i class="fa-solid fa-key mr-1"></i> Google Gemini API Key (Opsional)</span>
+                <a href="https://aistudio.google.com/apikey" target="_blank" class="underline text-sky-400 hover:text-sky-300">Ambil Key Gratis ↗</a>
+            </div>
+            <div class="flex gap-1.5">
+                <input type="password" id="geminiApiKeyInput" placeholder="Tempel AIzaSy... (kosongkan untuk mode gratis bawaan)"
+                    class="flex-1 bg-slate-900 text-white px-2.5 py-1 rounded border border-slate-700 outline-none focus:border-amber-400">
+                <button onclick="saveGeminiApiKey()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1 rounded cursor-pointer">
+                    Simpan
+                </button>
+            </div>
+        </div>
+
+        <!-- Bar Aksi Cepat -->
         <div class="bg-slate-900/95 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between gap-1.5 text-[10px]">
             <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer select-none">
                 <input type="checkbox" id="syncEditorContext" checked class="accent-purple-500 rounded cursor-pointer">
-                <span>Baca kode editor saat ini (untuk revisi/upgrade)</span>
+                <span>Baca kode editor (untuk revisi/upgrade)</span>
             </label>
             <button onclick="importFromClipboardToEditor()" title="Tempel kode hasil copy dari Web Gemini ke index.html"
                 class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2 py-1 rounded-lg cursor-pointer transition flex items-center gap-1 shrink-0 shadow">
@@ -573,15 +592,15 @@
         <div id="geminiChatArea" class="flex-1 p-3 overflow-y-auto space-y-3 text-xs bg-slate-950/90">
             <div class="bg-slate-900/90 border border-purple-500/30 rounded-2xl p-3 space-y-2">
                 <div class="text-purple-300 font-semibold flex items-center gap-1.5">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Mode Kreatif Maksimal Aktif!
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Siap Membuat Game & Aplikasi!
                 </div>
                 <p class="text-[11px] text-slate-300 leading-relaxed">
-                    Semua grafik, karakter, dan latar belakang dibuat langsung dengan <strong>SVG/Canvas/Animasi CSS</strong> (bebas gambar rusak) + efek suara! Kamu juga bisa minta <strong>perbaiki atau tambahkan fitur</strong> dari kode yang sudah tampil.
+                    Ketik ide aplikasimu di bawah. Grafik digambar otomatis dengan <strong>SVG/Canvas tajam</strong> (anti gambar rusak) & siap masuk ke <strong>index.html</strong>.
                 </p>
                 <div class="flex flex-wrap gap-1.5 pt-1">
-                    <button onclick="quickPromptGemini('Buatkan game perang pesawat di padang pasir piramida dengan grafis SVG detail, efek ledakan partikel, musik/efek tembak, boss kuat, dan tombol sentuh HP')"
+                    <button onclick="quickPromptGemini('Buatkan game perang tank 1 vs 5 musuh di padang pasir piramida dengan grafis SVG/Canvas, tembakan peluru, efek ledakan, skor, dan kontrol sentuh HP')"
                         class="text-[10px] bg-amber-600/20 hover:bg-amber-600/40 text-amber-200 border border-amber-500/40 px-2 py-1 rounded-lg cursor-pointer transition">
-                        🏜️ Perang Padang Pasir
+                        🏜️ Perang Tank 1 vs 5
                     </button>
                     <button onclick="quickPromptGemini('Buatkan storybook interaktif Si Kancil dan Buaya dengan ilustrasi SVG warna-warni di setiap halaman, animasi lompat, dan suara narasi')"
                         class="text-[10px] bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 border border-purple-500/40 px-2 py-1 rounded-lg cursor-pointer transition">
@@ -597,7 +616,7 @@
 
         <!-- Input Prompt Bawah -->
         <div class="p-2.5 bg-slate-900 border-t border-slate-800 flex gap-1.5 items-center">
-            <input type="text" id="geminiPromptInput" placeholder="Contoh: Tambahkan musuh bos & efek ledakan..." autocomplete="off"
+            <input type="text" id="geminiPromptInput" placeholder="Minta Gemini buatkan kode HTML..." autocomplete="off"
                 onkeydown="if(event.key==='Enter'){event.preventDefault(); askGeminiCoding();}"
                 class="flex-1 bg-slate-800 text-white text-xs rounded-full px-3.5 py-2 border border-purple-500/40 focus:border-purple-400 outline-none">
             <button id="geminiSendBtn" type="button" onclick="askGeminiCoding()"
@@ -792,11 +811,48 @@
         }
 
         // ==========================================
-        // GEMINI AI CODING STUDIO MAX (CONTEXT + ANTI BROKEN IMAGE)
+        // GEMINI AI CODING STUDIO (MULTI-ENGINE + FALLBACK)
         // ==========================================
         let isGeminiOpen = false;
         const generatedCodeStore = {};
         let geminiHistory = [];
+        let savedGeminiApiKey = localStorage.getItem('senpai_gemini_api_key') || '';
+
+        function updateGeminiEngineBadge() {
+            const badge = document.getElementById('geminiEngineBadge');
+            if (!badge) return;
+            if (savedGeminiApiKey) {
+                badge.textContent = 'Gemini 2.5 Pro';
+                badge.className = 'text-[9px] bg-amber-500/25 text-amber-300 border border-amber-400/50 px-1.5 py-0.2 rounded-full font-semibold';
+            } else {
+                badge.textContent = 'Auto-AI Free';
+                badge.className = 'text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-semibold';
+            }
+        }
+        updateGeminiEngineBadge();
+
+        function toggleGeminiApiKeyPanel() {
+            const bar = document.getElementById('geminiApiKeyBar');
+            bar.classList.toggle('hidden');
+            if (!bar.classList.contains('hidden')) {
+                document.getElementById('geminiApiKeyInput').value = savedGeminiApiKey;
+                document.getElementById('geminiApiKeyInput').focus();
+            }
+        }
+
+        function saveGeminiApiKey() {
+            const val = document.getElementById('geminiApiKeyInput').value.trim();
+            savedGeminiApiKey = val;
+            if (val) {
+                localStorage.setItem('senpai_gemini_api_key', val);
+                logTerminal('[INFO] Google Gemini API Key disimpan!');
+            } else {
+                localStorage.removeItem('senpai_gemini_api_key');
+                logTerminal('[INFO] Kembali ke mode Auto-AI Gratis.');
+            }
+            updateGeminiEngineBadge();
+            document.getElementById('geminiApiKeyBar').classList.add('hidden');
+        }
 
         function resetGeminiSession() {
             geminiHistory = [];
@@ -899,6 +955,70 @@
             askGeminiCoding();
         }
 
+        // Mesin AI Multi-Provider dengan Fallback Otomatis
+        async function fetchAIWithFallback(systemInstruction, messagesPayload, finalUserMessage) {
+            // 1. Jika user memasang Google Gemini API Key resmi
+            if (savedGeminiApiKey) {
+                const gemRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(savedGeminiApiKey)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        systemInstruction: { parts: [{ text: systemInstruction }] },
+                        contents: [{ role: 'user', parts: [{ text: finalUserMessage }] }]
+                    })
+                });
+                if (gemRes.ok) {
+                    const data = await gemRes.json();
+                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                }
+            }
+
+            // 2. Jalur Utama Gratis: Pollinations POST (model: openai)
+            try {
+                const res1 = await fetch('https://text.pollinations.ai/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: messagesPayload,
+                        model: 'openai',
+                        seed: Math.floor(Math.random() * 100000)
+                    })
+                });
+                if (res1.ok) {
+                    const txt1 = await res1.text();
+                    if (txt1 && txt1.includes('<')) return txt1;
+                }
+            } catch (_) {}
+
+            // 3. Jalur Cadangan 1: Pollinations POST (model: mistral)
+            try {
+                const res2 = await fetch('https://text.pollinations.ai/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: messagesPayload,
+                        model: 'mistral',
+                        seed: Math.floor(Math.random() * 100000)
+                    })
+                });
+                if (res2.ok) {
+                    const txt2 = await res2.text();
+                    if (txt2 && txt2.includes('<')) return txt2;
+                }
+            } catch (_) {}
+
+            // 4. Jalur Cadangan 2: Pollinations GET URL langsung
+            const compactPrompt = encodeURIComponent(`${systemInstruction}\n\nUser: ${finalUserMessage.slice(0, 3500)}`);
+            const res3 = await fetch(`https://text.pollinations.ai/${compactPrompt}?model=openai&seed=${Math.floor(Math.random() * 99999)}`);
+            if (res3.ok) {
+                const txt3 = await res3.text();
+                if (txt3 && txt3.includes('<')) return txt3;
+            }
+
+            throw new Error('Semua jalur AI sedang sibuk');
+        }
+
         async function askGeminiCoding() {
             const input = document.getElementById('geminiPromptInput');
             const sendBtn = document.getElementById('geminiSendBtn');
@@ -924,50 +1044,41 @@
             const loadingBubble = document.createElement('div');
             loadingBubble.id = loadingId;
             loadingBubble.className = 'flex items-center gap-2 text-purple-300 text-[11px] bg-slate-900/80 border border-purple-500/30 px-3 py-2 rounded-2xl w-fit';
-            loadingBubble.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gemini Pro Max merancang grafis & kode...`;
+            loadingBubble.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gemini sedang merancang grafis & kode HTML...`;
             chatArea.appendChild(loadingBubble);
             chatArea.scrollTop = chatArea.scrollHeight;
 
             try {
-                const systemInstruction = `Kamu adalah Senior Creative Web Developer & Game Designer kelas dunia untuk siswa Indonesia.
-ATURAN MUTLAK AGAR KODE SEMPURNA:
-1. DILARANG KERAS menggunakan URL gambar eksternal seperti imgur.com, unsplash, wikimedia, atau link .png/.jpg/.gif dari internet karena akan rusak/broken!
-2. WAJIB menggambar seluruh karakter, pesawat, musuh, bos, piramida, bukit pasir, ledakan, dan ikon menggunakan SVG inline yang detail, HTML5 Canvas 2D, gradien CSS kaya warna, atau Emoji besar yang tajam.
-3. Buat dalam SATU file HTML lengkap mandiri (CSS di <style> dan JavaScript di <script>) yang responsif untuk layar HP (375px x 700px) dan mendukung sentuhan (touchstart/touchmove/click) sekaligus keyboard.
-4. Tambahkan efek visual memukau (partikel ledakan, animasi halus, HUD skor & HP bar) serta efek suara sintetis menggunakan Web Audio API (AudioContext) tanpa file audio eksternal.
-5. Jika user memberikan kode yang sudah ada sebelumnya, PERBAIKI dan TINGKATKAN kode tersebut sesuai permintaan user tanpa menghapus fitur yang sudah bagus.
-6. Kembalikan HANYA kode HTML lengkap di dalam blok \`\`\`html ... \`\`\` tanpa teks pembuka/penutup.`;
+                const systemInstruction = `Kamu adalah Senior Creative Web Developer & Game Designer untuk siswa Indonesia.
+ATURAN WAJIB:
+1. DILARANG memakai URL gambar eksternal (imgur, unsplash, dll) karena akan rusak.
+2. WAJIB menggambar karakter, tank, pesawat, musuh, piramida, bukit pasir, dan ledakan dengan SVG inline detail, HTML5 Canvas 2D, atau Emoji tajam.
+3. Buat dalam SATU file HTML lengkap mandiri (CSS di <style> & JS di <script>), responsif di HP (375px x 700px), mendukung sentuhan layar (touchstart/touchmove/click) & tombol arah di layar, serta efek suara Web Audio API.
+4. Kembalikan HANYA kode HTML lengkap di dalam blok \`\`\`html ... \`\`\` tanpa penjelasan panjang.`;
 
                 const currentEditorCode = currentTab === 'html' ? editor.getValue() : codeStore.html;
                 const isCustomCode = currentEditorCode && currentEditorCode.trim().length > 50 && !currentEditorCode.includes('Aplikasi Web IDE CODING SENPAI siap digunakan!');
 
                 let finalUserMessage = userPrompt;
                 if (syncContext && isCustomCode) {
-                    finalUserMessage = `Ini adalah kode HTML saya saat ini di editor:\n\`\`\`html\n${currentEditorCode}\n\`\`\`\n\nPermintaan perubahan/peningkatan saya: ${userPrompt}\n\nTulis ulang kode HTML lengkapnya dengan peningkatan visual SVG/Canvas yang jauh lebih bagus tanpa link gambar eksternal!`;
+                    finalUserMessage = `Kode HTML saat ini:\n\`\`\`html\n${currentEditorCode.slice(0, 7500)}\n\`\`\`\n\nPermintaan perubahan/peningkatan: ${userPrompt}\n\nTulis ulang kode HTML lengkap dengan visual SVG/Canvas yang jauh lebih bagus tanpa URL gambar eksternal.`;
                 }
 
                 const messagesPayload = [
                     { role: 'system', content: systemInstruction },
-                    ...geminiHistory.slice(-4),
+                    ...geminiHistory.slice(-2),
                     { role: 'user', content: finalUserMessage }
                 ];
 
-                const response = await fetch('https://text.pollinations.ai/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: messagesPayload,
-                        model: 'openai-large',
-                        seed: Math.floor(Math.random() * 100000)
-                    })
-                });
-
-                if (!response.ok) throw new Error('Server AI sibuk');
-                const rawReply = await response.text();
+                const rawReply = await fetchAIWithFallback(systemInstruction, messagesPayload, finalUserMessage);
                 const htmlResult = extractCleanHTML(rawReply);
 
+                if (!htmlResult || !htmlResult.includes('<')) {
+                    throw new Error('Format kode tidak lengkap');
+                }
+
                 geminiHistory.push({ role: 'user', content: userPrompt });
-                geminiHistory.push({ role: 'assistant', content: '```html\n' + htmlResult.slice(0, 6000) + '\n```' });
+                geminiHistory.push({ role: 'assistant', content: '```html\n' + htmlResult.slice(0, 4500) + '\n```' });
 
                 const codeKey = 'code_' + Date.now();
                 generatedCodeStore[codeKey] = htmlResult;
@@ -999,9 +1110,10 @@ ATURAN MUTLAK AGAR KODE SEMPURNA:
                 const errCard = document.createElement('div');
                 errCard.className = 'bg-rose-950/60 border border-rose-500/40 text-rose-200 rounded-xl p-2.5 text-[11px] space-y-1.5';
                 errCard.innerHTML = `
-                    <div>Koneksi server AI sedang padat. Klik tombol <strong>Web Gemini</strong> di pojok kanan atas jendela ini untuk memakai akun Gemini aslimu, lalu klik <strong>Paste ke HTML</strong>!</div>
+                    <div>Server AI publik sedang antre. Kamu bisa klik tombol <strong>Web</strong> di pojok kanan atas jendela ini untuk memakai akun Gemini aslimu, lalu klik <strong>Paste ke HTML</strong>!</div>
                 `;
                 chatArea.appendChild(errCard);
+                chatArea.scrollTop = chatArea.scrollHeight;
             } finally {
                 input.disabled = false;
                 sendBtn.disabled = false;
