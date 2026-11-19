@@ -348,6 +348,7 @@
         .animate-export { display: inline-flex; align-items: center; gap: 4px; animation: exportSlide 1.6s infinite ease-in-out; }
 
         #quoteDisplay { transition: opacity 0.4s ease-in-out; }
+            .ace_print-margin { display: none !important; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -3179,6 +3180,7 @@ print("Coding Senpai WSL Backend Active!")`;
         let codeStore = { html: defaultHTML, py: defaultPy };
 
         const editor = ace.edit("editor");
+        editor.setShowPrintMargin(false);
         editor.setTheme("ace/theme/tomorrow_night_eighties");
         editor.session.setMode("ace/mode/html");
         editor.setValue(defaultHTML, -1);
