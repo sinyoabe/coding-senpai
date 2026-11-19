@@ -2140,6 +2140,9 @@
                 drawTaroLeafShelter(seasonCtx, W, H, dev, seasonTick);
 
             } else if (mode === 'spring') {
+                // Tahap 1: Matahari terbit terlebih dahulu sampai berhenti sempurna di pojok kanan atas
+                drawSpringBabySun(seasonCtx, W, H, dev, seasonTick);
+
                 // Hamparan rumput lembut di bawah preview
                 const grad = seasonCtx.createLinearGradient(0, H - 35, 0, H);
                 grad.addColorStop(0, 'rgba(16, 185, 129, 0)');
@@ -2147,14 +2150,19 @@
                 seasonCtx.fillStyle = grad;
                 seasonCtx.fillRect(0, H - 35, W, 35);
 
+                // Tahap 2: Setelah matahari terbit sempurna, bunga-bunga mulai tumbuh dan bermekaran
+                const sunFinishedRising = seasonTick >= SUN_RISE_DURATION;
+
                 springFlowers.forEach(f => {
-                    f.tick++;
-                    if (f.tick > f.delay) {
-                        if (f.currentStemH < f.maxStemH) {
-                            f.currentStemH += (f.maxStemH - f.currentStemH) * 0.05;
-                        }
-                        if (f.currentStemH > f.maxStemH * 0.65 && f.currentBloom < f.maxBloom) {
-                            f.currentBloom += (f.maxBloom - f.currentBloom) * 0.06;
+                    if (sunFinishedRising) {
+                        f.tick++;
+                        if (f.tick > f.delay) {
+                            if (f.currentStemH < f.maxStemH) {
+                                f.currentStemH += (f.maxStemH - f.currentStemH) * 0.055;
+                            }
+                            if (f.currentStemH > f.maxStemH * 0.65 && f.currentBloom < f.maxBloom) {
+                                f.currentBloom += (f.maxBloom - f.currentBloom) * 0.065;
+                            }
                         }
                     }
 
