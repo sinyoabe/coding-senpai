@@ -74,6 +74,8 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 25px var(--accent-glow); 
             background: #111827; 
             transition: all 0.35s ease; 
+            position: relative;
+            z-index: 10;
         }
         .tablet-frame { 
             width: 600px; 
@@ -83,8 +85,17 @@
             border-radius: 24px; 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 25px var(--accent-glow);
             transition: all 0.35s ease;
+            position: relative;
+            z-index: 10;
         }
-        .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
+        .full-frame { 
+            width: 100%; 
+            height: calc(100vh - 110px); 
+            border: none; 
+            border-radius: 8px; 
+            position: relative;
+            z-index: 10;
+        }
 
         /* =========================================================
            SIRI RAINBOW ORB POLOS + HOVER EXPAND "JREETT" KE ATAS
@@ -284,6 +295,22 @@
             pointer-events: auto;
         }
 
+        /* Popover Change Background */
+        .bg-popover {
+            transform-origin: top left;
+            transition: transform 0.28s cubic-bezier(0.22, 1.18, 0.36, 1), opacity 0.2s ease;
+        }
+        .bg-popover.bg-closed {
+            opacity: 0;
+            transform: scale(0.85) translateY(-10px);
+            pointer-events: none;
+        }
+        .bg-popover.bg-open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
         /* Animasi Pop-up Login Modal ala macOS Sheet */
         .mac-modal-backdrop {
             transition: opacity 0.28s ease, backdrop-filter 0.28s ease;
@@ -406,10 +433,93 @@
             </div>
         </div>
 
-        <!-- Right Panel: Live Device Preview -->
+        <!-- Right Panel: Change Background & Device Preview -->
         <div class="w-1/2 flex flex-col bg-slate-900/30 relative">
-            <div class="theme-toolbar bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-400 font-medium"><i class="fa-solid fa-mobile-screen mr-1"></i> Live Device Preview</span>
+            <div class="theme-toolbar bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs relative z-30">
+                
+                <!-- Tombol Klik "Change Background" + Popover Pengaturan Gambar Siswa -->
+                <div class="relative">
+                    <button id="changeBgBtn" onclick="toggleBgPopover(event)" title="Klik untuk ubah gambar latar belakang area preview"
+                        class="text-slate-300 hover:text-white font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/15 transition cursor-pointer">
+                        <i class="fa-solid fa-image" style="color: var(--text-accent)"></i>
+                        <span>Change Background</span>
+                    </button>
+
+                    <!-- Kotak Pengaturan Background (Klik di luar kotak = Konfirmasi OK) -->
+                    <div id="bgCustomizerPopover" class="bg-popover bg-closed absolute left-0 top-10 w-72 theme-panel theme-border bg-slate-950/95 backdrop-blur-md border rounded-2xl p-3.5 shadow-2xl space-y-3 z-50">
+                        <div class="flex items-center justify-between border-b theme-border pb-2">
+                            <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--text-accent)"></i>
+                                Background Preview
+                            </span>
+                            <span class="text-[10px] text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                Klik luar = OK
+                            </span>
+                        </div>
+
+                        <!-- Upload Gambar Siswa -->
+                        <div>
+                            <input type="file" id="previewBgFileInput" accept="image/*" class="hidden" onchange="handlePreviewBgUpload(event)">
+                            <button type="button" onclick="document.getElementById('previewBgFileInput').click()"
+                                class="w-full theme-btn-accent bg-indigo-600 hover:opacity-90 text-white font-semibold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition shadow">
+                                <i class="fa-solid fa-upload"></i> Upload Gambar Kamu
+                            </button>
+                        </div>
+
+                        <!-- Slider Posisi Horizontal (X) -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-300">
+                                <span><i class="fa-solid fa-arrows-left-right mr-1 text-slate-400"></i>Posisi Kiri - Kanan</span>
+                                <span id="bgPosXLabel" class="font-mono text-sky-400">50%</span>
+                            </div>
+                            <input type="range" id="bgPosXSlider" min="0" max="100" value="50" oninput="updatePreviewBgStyle()"
+                                class="w-full accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+
+                        <!-- Slider Posisi Vertikal (Y) -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-300">
+                                <span><i class="fa-solid fa-arrows-up-down mr-1 text-slate-400"></i>Posisi Atas - Bawah</span>
+                                <span id="bgPosYLabel" class="font-mono text-sky-400">50%</span>
+                            </div>
+                            <input type="range" id="bgPosYSlider" min="0" max="100" value="50" oninput="updatePreviewBgStyle()"
+                                class="w-full accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+
+                        <!-- Slider Zoom / Ukuran Gambar -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-300">
+                                <span><i class="fa-solid fa-magnifying-glass-plus mr-1 text-slate-400"></i>Ukuran Gambar</span>
+                                <span id="bgZoomLabel" class="font-mono text-sky-400">100%</span>
+                            </div>
+                            <input type="range" id="bgZoomSlider" min="50" max="220" value="100" oninput="updatePreviewBgStyle()"
+                                class="w-full accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+
+                        <!-- Slider Transparansi (Opacity) -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] text-slate-300">
+                                <span><i class="fa-solid fa-droplet mr-1 text-slate-400"></i>Transparansi Gambar</span>
+                                <span id="bgOpacityLabel" class="font-mono text-emerald-400">85%</span>
+                            </div>
+                            <input type="range" id="bgOpacitySlider" min="10" max="100" value="85" oninput="updatePreviewBgStyle()"
+                                class="w-full accent-emerald-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+
+                        <!-- Tombol Reset Background -->
+                        <div class="pt-1 border-t theme-border flex items-center justify-between gap-2">
+                            <button type="button" onclick="resetPreviewBg()"
+                                class="flex-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 text-[11px] font-semibold py-1.5 rounded-lg cursor-pointer transition">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Gelap
+                            </button>
+                            <button type="button" onclick="closeBgPopover(true)"
+                                class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold py-1.5 rounded-lg cursor-pointer transition">
+                                <i class="fa-solid fa-check mr-1"></i> Selesai
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex items-center gap-1.5">
                     <button onclick="setDevice('phone')" id="btn-phone" class="theme-btn-accent bg-indigo-600 text-white px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-mobile"></i> Phone</button>
                     <button onclick="setDevice('tablet')" id="btn-tablet" class="theme-surface bg-slate-800 hover:opacity-80 text-slate-300 px-2.5 py-1 rounded cursor-pointer"><i class="fa-solid fa-tablet"></i> Tablet</button>
@@ -418,8 +528,13 @@
                 <span id="deviceLabel" class="text-slate-500 hidden xl:inline">iPhone 15 Pro (375px x 700px)</span>
             </div>
 
-            <!-- Area Preview -->
-            <div id="previewArea" class="flex-1 flex items-center justify-center p-4 overflow-auto">
+            <!-- Area Preview dengan Lapisan Gambar Background Custom Siswa -->
+            <div id="previewArea" class="flex-1 flex items-center justify-center p-4 overflow-auto relative">
+                <!-- Layer Gambar Latar Belakang di Belakang Frame HP -->
+                <div id="previewBgLayer" class="absolute inset-0 pointer-events-none transition-opacity duration-150"
+                    style="background-repeat: no-repeat; background-position: 50% 50%; background-size: cover; opacity: 0.85;">
+                </div>
+
                 <div id="previewContainer" class="phone-frame">
                     <iframe id="previewFrame" class="w-full h-full border-none bg-white"></iframe>
                 </div>
@@ -803,6 +918,126 @@
 
     <script>
         // ==========================================
+        // CHANGE BACKGROUND PREVIEW (CUSTOM SISWA)
+        // ==========================================
+        let isBgPopoverOpen = false;
+        let previewBgState = JSON.parse(localStorage.getItem('senpai_preview_bg') || 'null') || {
+            image: '',
+            posX: 50,
+            posY: 50,
+            zoom: 100,
+            opacity: 85
+        };
+
+        function applyPreviewBgState(saveToStorage = false) {
+            const bgLayer = document.getElementById('previewBgLayer');
+            if (!bgLayer) return;
+
+            document.getElementById('bgPosXSlider').value = previewBgState.posX;
+            document.getElementById('bgPosYSlider').value = previewBgState.posY;
+            document.getElementById('bgZoomSlider').value = previewBgState.zoom;
+            document.getElementById('bgOpacitySlider').value = previewBgState.opacity;
+
+            document.getElementById('bgPosXLabel').textContent = `${previewBgState.posX}%`;
+            document.getElementById('bgPosYLabel').textContent = `${previewBgState.posY}%`;
+            document.getElementById('bgZoomLabel').textContent = `${previewBgState.zoom}%`;
+            document.getElementById('bgOpacityLabel').textContent = `${previewBgState.opacity}%`;
+
+            if (previewBgState.image) {
+                bgLayer.style.backgroundImage = `url("${previewBgState.image}")`;
+                bgLayer.style.backgroundPosition = `${previewBgState.posX}% ${previewBgState.posY}%`;
+                bgLayer.style.backgroundSize = previewBgState.zoom === 100 ? 'cover' : `${previewBgState.zoom}% auto`;
+                bgLayer.style.opacity = (previewBgState.opacity / 100).toFixed(2);
+            } else {
+                bgLayer.style.backgroundImage = 'none';
+            }
+
+            if (saveToStorage) {
+                try {
+                    localStorage.setItem('senpai_preview_bg', JSON.stringify(previewBgState));
+                } catch (e) {
+                    // Abaikan jika ukuran gambar base64 melebihi batas localStorage
+                }
+            }
+        }
+
+        function toggleBgPopover(e) {
+            if (e) e.stopPropagation();
+            const pop = document.getElementById('bgCustomizerPopover');
+            isBgPopoverOpen = !isBgPopoverOpen;
+            if (isBgPopoverOpen) {
+                pop.classList.remove('bg-closed');
+                pop.classList.add('bg-open');
+            } else {
+                closeBgPopover(true);
+            }
+        }
+
+        function closeBgPopover(confirmSave = true) {
+            if (!isBgPopoverOpen) return;
+            isBgPopoverOpen = false;
+            const pop = document.getElementById('bgCustomizerPopover');
+            pop.classList.remove('bg-open');
+            pop.classList.add('bg-closed');
+            if (confirmSave) {
+                applyPreviewBgState(true);
+                if (previewBgState.image) {
+                    logTerminal(`[INFO] Background preview diperbarui (Posisi: ${previewBgState.posX}%, ${previewBgState.posY}%, Transparansi: ${previewBgState.opacity}%).`);
+                }
+            }
+        }
+
+        function handlePreviewBgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewBgState.image = e.target.result;
+                applyPreviewBgState(true);
+                logTerminal(`[SUCCESS] Gambar background '${file.name}' dipasang! Atur posisi & transparansi lalu klik luar kotak untuk OK.`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updatePreviewBgStyle() {
+            previewBgState.posX = Number(document.getElementById('bgPosXSlider').value);
+            previewBgState.posY = Number(document.getElementById('bgPosYSlider').value);
+            previewBgState.zoom = Number(document.getElementById('bgZoomSlider').value);
+            previewBgState.opacity = Number(document.getElementById('bgOpacitySlider').value);
+            applyPreviewBgState(false);
+        }
+
+        function resetPreviewBg() {
+            previewBgState = {
+                image: '',
+                posX: 50,
+                posY: 50,
+                zoom: 100,
+                opacity: 85
+            };
+            document.getElementById('previewBgFileInput').value = '';
+            localStorage.removeItem('senpai_preview_bg');
+            applyPreviewBgState(false);
+            closeBgPopover(false);
+            logTerminal(`[INFO] Background preview dikembalikan ke gelap default.`);
+        }
+
+        // Inisialisasi state background tersimpan saat halaman dibuka
+        applyPreviewBgState(false);
+
+        // Klik di luar kotak Change Background = Konfirmasi OK & Tutup
+        document.addEventListener('click', (e) => {
+            if (isBgPopoverOpen) {
+                const pop = document.getElementById('bgCustomizerPopover');
+                const btn = document.getElementById('changeBgBtn');
+                if (pop && btn && !pop.contains(e.target) && !btn.contains(e.target)) {
+                    closeBgPopover(true);
+                }
+            }
+        });
+
+        // ==========================================
         // SIRI DOCK PIN / HOVER CONTROLLER
         // ==========================================
         function toggleSiriPin() {
@@ -955,9 +1190,7 @@
             askGeminiCoding();
         }
 
-        // Mesin AI Multi-Provider dengan Fallback Otomatis
         async function fetchAIWithFallback(systemInstruction, messagesPayload, finalUserMessage) {
-            // 1. Jika user memasang Google Gemini API Key resmi
             if (savedGeminiApiKey) {
                 const gemRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(savedGeminiApiKey)}`, {
                     method: 'POST',
@@ -974,7 +1207,6 @@
                 }
             }
 
-            // 2. Jalur Utama Gratis: Pollinations POST (model: openai)
             try {
                 const res1 = await fetch('https://text.pollinations.ai/', {
                     method: 'POST',
@@ -991,7 +1223,6 @@
                 }
             } catch (_) {}
 
-            // 3. Jalur Cadangan 1: Pollinations POST (model: mistral)
             try {
                 const res2 = await fetch('https://text.pollinations.ai/', {
                     method: 'POST',
@@ -1008,7 +1239,6 @@
                 }
             } catch (_) {}
 
-            // 4. Jalur Cadangan 2: Pollinations GET URL langsung
             const compactPrompt = encodeURIComponent(`${systemInstruction}\n\nUser: ${finalUserMessage.slice(0, 3500)}`);
             const res3 = await fetch(`https://text.pollinations.ai/${compactPrompt}?model=openai&seed=${Math.floor(Math.random() * 99999)}`);
             if (res3.ok) {
