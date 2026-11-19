@@ -103,6 +103,29 @@
             pointer-events: auto;
         }
 
+        /* Floating Draggable YouTube Music Player */
+        .floating-yt-player {
+            width: 340px;
+            border: 2px solid var(--phone-ring);
+            border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 20px var(--accent-glow);
+            background-color: var(--bg-panel);
+            overflow: hidden;
+            user-select: none;
+            transform-origin: top right;
+            transition: transform 0.36s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.26s ease;
+        }
+        .floating-yt-player.yt-closed {
+            opacity: 0;
+            transform: scale(0.75) translateY(-16px);
+            pointer-events: none;
+        }
+        .floating-yt-player.yt-open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
         /* Animasi Pop-up Login Modal ala macOS Sheet */
         .mac-modal-backdrop {
             transition: opacity 0.28s ease, backdrop-filter 0.28s ease;
@@ -154,11 +177,19 @@
             </span>
         </div>
 
-        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden lg:block text-center max-w-md truncate">
+        <div id="quoteDisplay" class="text-xs italic text-slate-400 hidden xl:block text-center max-w-md truncate">
             "Stay Hungry, Stay Foolish." - Steve Jobs
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
+            <!-- Tombol Ikon YouTube Music Player -->
+            <button id="ytNavBtn" onclick="toggleYoutubePlayer()" title="Buka Pemutar Musik YouTube"
+                class="bg-rose-600/20 hover:bg-rose-600/35 text-rose-400 border border-rose-500/40 px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition cursor-pointer relative">
+                <i class="fa-brands fa-youtube text-rose-500 text-sm"></i>
+                <span class="hidden md:inline font-medium">Music</span>
+                <span id="ytPlayingDot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            </button>
+
             <!-- Pemilih 5 Tema Warna -->
             <div class="flex items-center gap-1.5 bg-slate-950/60 border theme-border px-2 py-1 rounded text-xs mr-1" title="Ganti Tema Tampilan">
                 <i class="fa-solid fa-palette text-amber-400"></i>
@@ -254,6 +285,66 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- PEMUTAR MUSIK YOUTUBE MELAYANG (BISA DI-DRAG & MINIMIZE TETAP NYALA)  -->
+    <!-- ===================================================================== -->
+    <div id="floatingYoutubeModal" class="yt-closed fixed top-14 right-6 z-40 floating-yt-player">
+        <!-- Header Drag Bar -->
+        <div id="ytDragHandle" title="Seret untuk memindahkan pemutar musik"
+            class="theme-toolbar bg-slate-900 px-3 py-2 border-b theme-border flex items-center justify-between cursor-move">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-white">
+                <i class="fa-brands fa-youtube text-rose-500 text-sm"></i>
+                <span>Coding Music Player</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="stopYoutubeMusic()" title="Hentikan & Tutup Musik"
+                    class="text-[10px] bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white px-1.5 py-0.5 rounded border border-rose-500/40 cursor-pointer transition">
+                    Stop
+                </button>
+                <button onclick="toggleYoutubePlayer()" title="Sembunyikan (Musik tetap jalan)"
+                    class="text-slate-400 hover:text-white px-1 cursor-pointer">
+                    <i class="fa-solid fa-minus text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Link YouTube & Pilihan Preset -->
+        <div class="p-2.5 space-y-2 theme-panel">
+            <div class="flex gap-1.5">
+                <input type="text" id="ytUrlInput" placeholder="Tempel link YouTube di sini..."
+                    onkeydown="if(event.key==='Enter'){event.preventDefault(); loadYoutubeFromInput();}"
+                    class="theme-surface theme-border flex-1 bg-slate-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 border outline-none focus:border-rose-500">
+                <button onclick="loadYoutubeFromInput()"
+                    class="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer transition shrink-0">
+                    Putar
+                </button>
+            </div>
+
+            <!-- Preset Musik Fokus Ngoding -->
+            <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px]">
+                <button onclick="playYoutubePreset('jfKfPfyJRdk')" class="theme-surface hover:opacity-80 text-slate-300 px-2 py-1 rounded border theme-border whitespace-nowrap cursor-pointer">
+                    🎧 Lofi Girl Radio
+                </button>
+                <button onclick="playYoutubePreset('4xDzrJKXOOY')" class="theme-surface hover:opacity-80 text-slate-300 px-2 py-1 rounded border theme-border whitespace-nowrap cursor-pointer">
+                    🌃 Synthwave Coding
+                </button>
+                <button onclick="playYoutubePreset('5qap5aO4i9A')" class="theme-surface hover:opacity-80 text-slate-300 px-2 py-1 rounded border theme-border whitespace-nowrap cursor-pointer">
+                    ☕ Chill Beats
+                </button>
+            </div>
+
+            <!-- Embed Frame Video -->
+            <div class="w-full aspect-video bg-black rounded-xl overflow-hidden border theme-border relative">
+                <iframe id="ytIframe" class="w-full h-full border-none"
+                    src=""
+                    title="YouTube Music Player"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
     </div>
 
     <!-- ===================================================================== -->
@@ -487,6 +578,66 @@
         };
 
         // ==========================================
+        // YOUTUBE MUSIC PLAYER LOGIC (DRAGGABLE)
+        // ==========================================
+        let isYtOpen = false;
+        let currentYtVideoId = '';
+
+        function extractYoutubeId(url) {
+            if (!url) return null;
+            const trimmed = url.trim();
+            if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = trimmed.match(regExp);
+            return match ? match[1] : null;
+        }
+
+        function toggleYoutubePlayer() {
+            const modal = document.getElementById('floatingYoutubeModal');
+            isYtOpen = !isYtOpen;
+            if (isYtOpen) {
+                modal.classList.remove('yt-closed');
+                modal.classList.add('yt-open');
+                // Jika belum pernah diputar, otomatis muat Lofi Girl Radio
+                if (!currentYtVideoId) {
+                    playYoutubePreset('jfKfPfyJRdk', false);
+                }
+            } else {
+                modal.classList.remove('yt-open');
+                modal.classList.add('yt-closed');
+            }
+        }
+
+        function playYoutubePreset(videoId, autoplay = true) {
+            currentYtVideoId = videoId;
+            const iframe = document.getElementById('ytIframe');
+            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=${autoplay ? 1 : 0}&rel=0`;
+            document.getElementById('ytPlayingDot').classList.remove('hidden');
+            logTerminal(`[INFO] YouTube Music dimuat (ID: ${videoId})`);
+        }
+
+        function loadYoutubeFromInput() {
+            const input = document.getElementById('ytUrlInput');
+            const videoId = extractYoutubeId(input.value);
+            if (!videoId) {
+                alert('Link YouTube tidak valid. Contoh: https://www.youtube.com/watch?v=jfKfPfyJRdk');
+                return;
+            }
+            playYoutubePreset(videoId, true);
+        }
+
+        function stopYoutubeMusic() {
+            currentYtVideoId = '';
+            document.getElementById('ytIframe').src = '';
+            document.getElementById('ytPlayingDot').classList.add('hidden');
+            isYtOpen = false;
+            const modal = document.getElementById('floatingYoutubeModal');
+            modal.classList.remove('yt-open');
+            modal.classList.add('yt-closed');
+            logTerminal(`[INFO] YouTube Music dihentikan.`);
+        }
+
+        // ==========================================
         // ROTATING DEVELOPER QUOTES (TOP NAVBAR)
         // ==========================================
         const devQuotes = [
@@ -652,39 +803,24 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // DRAGGABLE FLOATING PHONE LOGIC + MAC GENIE ORIGIN
+        // UNIVERSAL DRAGGABLE HELPER (CHAT PHONE & YOUTUBE PLAYER)
         // ==========================================
-        function updateGenieOrigin() {
-            const phoneEl = document.getElementById('floatingPhoneChat');
-            const waBtn = document.getElementById('waFloatingBtn');
-            if (!phoneEl || !waBtn) return;
+        function makeElementDraggable(elementId, handleId, onDragEndCallback = null) {
+            const el = document.getElementById(elementId);
+            const handle = document.getElementById(handleId);
+            if (!el || !handle) return;
 
-            const waRect = waBtn.getBoundingClientRect();
-            const waCenterX = waRect.left + waRect.width / 2;
-            const waCenterY = waRect.top + waRect.height / 2;
-
-            const currentLeft = phoneEl.offsetLeft;
-            const currentTop = phoneEl.offsetTop;
-
-            const originX = waCenterX - currentLeft;
-            const originY = waCenterY - currentTop;
-            phoneEl.style.transformOrigin = `${originX}px ${originY}px`;
-        }
-
-        (function initDraggablePhone() {
-            const phoneEl = document.getElementById('floatingPhoneChat');
-            const handleEl = document.getElementById('phoneDragHandle');
             let isDragging = false;
             let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
 
             function onStart(clientX, clientY) {
                 isDragging = true;
-                phoneEl.style.transition = 'none';
-                const rect = phoneEl.getBoundingClientRect();
-                phoneEl.style.bottom = 'auto';
-                phoneEl.style.right = 'auto';
-                phoneEl.style.left = rect.left + 'px';
-                phoneEl.style.top = rect.top + 'px';
+                el.style.transition = 'none';
+                const rect = el.getBoundingClientRect();
+                el.style.bottom = 'auto';
+                el.style.right = 'auto';
+                el.style.left = rect.left + 'px';
+                el.style.top = rect.top + 'px';
 
                 startX = clientX;
                 startY = clientY;
@@ -697,30 +833,30 @@ print("Coding Senpai WSL Backend Active!")`;
                 let newLeft = initialLeft + (clientX - startX);
                 let newTop = initialTop + (clientY - startY);
 
-                const maxLeft = window.innerWidth - phoneEl.offsetWidth;
-                const maxTop = window.innerHeight - phoneEl.offsetHeight;
+                const maxLeft = window.innerWidth - el.offsetWidth;
+                const maxTop = window.innerHeight - el.offsetHeight;
                 newLeft = Math.max(0, Math.min(newLeft, maxLeft));
                 newTop = Math.max(0, Math.min(newTop, maxTop));
 
-                phoneEl.style.left = newLeft + 'px';
-                phoneEl.style.top = newTop + 'px';
+                el.style.left = newLeft + 'px';
+                el.style.top = newTop + 'px';
             }
 
             function onEnd() {
                 if (!isDragging) return;
                 isDragging = false;
-                phoneEl.style.transition = '';
-                updateGenieOrigin();
+                el.style.transition = '';
+                if (onDragEndCallback) onDragEndCallback();
             }
 
-            handleEl.addEventListener('mousedown', (e) => {
+            handle.addEventListener('mousedown', (e) => {
                 if (e.target.closest('button')) return;
                 onStart(e.clientX, e.clientY);
             });
             window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
             window.addEventListener('mouseup', onEnd);
 
-            handleEl.addEventListener('touchstart', (e) => {
+            handle.addEventListener('touchstart', (e) => {
                 if (e.target.closest('button')) return;
                 const touch = e.touches[0];
                 onStart(touch.clientX, touch.clientY);
@@ -731,13 +867,30 @@ print("Coding Senpai WSL Backend Active!")`;
                 onMove(touch.clientX, touch.clientY);
             }, { passive: true });
             window.addEventListener('touchend', onEnd);
-        })();
+        }
+
+        function updateGenieOrigin() {
+            const phoneEl = document.getElementById('floatingPhoneChat');
+            const waBtn = document.getElementById('waFloatingBtn');
+            if (!phoneEl || !waBtn) return;
+
+            const waRect = waBtn.getBoundingClientRect();
+            const waCenterX = waRect.left + waRect.width / 2;
+            const waCenterY = waRect.top + waRect.height / 2;
+
+            const originX = waCenterX - phoneEl.offsetLeft;
+            const originY = waCenterY - phoneEl.offsetTop;
+            phoneEl.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+
+        makeElementDraggable('floatingPhoneChat', 'phoneDragHandle', updateGenieOrigin);
+        makeElementDraggable('floatingYoutubeModal', 'ytDragHandle');
 
         // ==========================================
         // TEMPORARY ATTACHMENT (AUTO-EXPIRE 5 MENIT)
         // ==========================================
-        const TEMP_FILE_TTL_MS = 5 * 60 * 1000; // 5 menit (300.000 ms)
-        const MAX_FILE_BYTES = 1.5 * 1024 * 1024; // Maks 1.5 MB agar aman lewat WebSocket MQTT
+        const TEMP_FILE_TTL_MS = 5 * 60 * 1000;
+        const MAX_FILE_BYTES = 1.5 * 1024 * 1024;
         let pendingAttachment = null;
 
         function formatBytes(bytes) {
@@ -805,7 +958,6 @@ print("Coding Senpai WSL Backend Active!")`;
             document.getElementById('lightboxImg').src = '';
         }
 
-        // Interval 1 detik untuk menghitung mundur & menghapus file yang lewat 5 menit
         setInterval(() => {
             const now = Date.now();
             let hasNewlyExpired = false;
@@ -814,12 +966,10 @@ print("Coding Senpai WSL Backend Active!")`;
                 if (msg.attachment && !msg.attachment.expired) {
                     const remaining = msg.attachment.expiresAt - now;
                     if (remaining <= 0) {
-                        // Hapus data base64 file dari memori secara permanen
                         msg.attachment.expired = true;
                         msg.attachment.dataUrl = null;
                         hasNewlyExpired = true;
                     } else {
-                        // Update label countdown detik berjalan pada elemen jika ada di DOM
                         const timerEl = document.getElementById(`timer_${msg.id}`);
                         if (timerEl) {
                             const totalSec = Math.ceil(remaining / 1000);
@@ -1143,7 +1293,6 @@ print("Coding Senpai WSL Backend Active!")`;
             if (!msg || (!msg.text && !msg.attachment) || renderedMsgIds.has(id)) return;
             renderedMsgIds.add(id);
 
-            // Cek jika lampiran sudah melewati waktu kedaluwarsa saat diterima
             if (msg.attachment && Date.now() >= msg.attachment.expiresAt) {
                 msg.attachment.expired = true;
                 msg.attachment.dataUrl = null;
@@ -1183,7 +1332,6 @@ print("Coding Senpai WSL Backend Active!")`;
                 const rankPrefix = msg.rank ? `#${msg.rank} ` : '';
                 const originTag = msg.origin ? ` (${escapeHTML(msg.origin)})` : '';
 
-                // Bangun HTML Lampiran Temporary (jika ada)
                 let attachmentHTML = '';
                 if (msg.attachment) {
                     const remaining = msg.attachment.expiresAt - now;
