@@ -461,29 +461,33 @@
                         <!-- Ceklist Auto Preview Animasi 4 Musim -->
                         <div class="space-y-1.5 bg-slate-900/80 p-2.5 rounded-xl border theme-border">
                             <div class="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
-                                <span><i class="fa-solid fa-cloud-sun-rain mr-1 text-amber-400"></i> Animasi 4 Musim (Auto Preview)</span>
+                                <span><i class="fa-solid fa-cloud-sun-rain mr-1 text-amber-400"></i> Animasi 4 Musim</span>
                                 <span class="text-[9px] text-slate-400">Kosong = Default</span>
                             </div>
                             <div class="grid grid-cols-2 gap-1.5 pt-0.5">
-                                <label class="flex items-center gap-2 text-[11px] text-sky-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                <label title="Salju turun + Beruang kutub & anaknya bermain hide and seek"
+                                    class="flex items-center gap-2 text-[11px] text-sky-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
                                     <input type="checkbox" id="season-snow" value="snow" onchange="handleSeasonCheckbox(this)"
                                         class="accent-sky-400 rounded cursor-pointer">
-                                    <span>❄️ Salju</span>
+                                    <span>❄️ Salju + 🐻‍❄️</span>
                                 </label>
-                                <label class="flex items-center gap-2 text-[11px] text-amber-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                <label title="Daun maple berguguran + 2 tupai bermain hide and seek"
+                                    class="flex items-center gap-2 text-[11px] text-amber-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
                                     <input type="checkbox" id="season-autumn" value="autumn" onchange="handleSeasonCheckbox(this)"
                                         class="accent-amber-500 rounded cursor-pointer">
-                                    <span>🍂 Gugur</span>
+                                    <span>🍁 Gugur + 🐿️</span>
                                 </label>
-                                <label class="flex items-center gap-2 text-[11px] text-indigo-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                <label title="Hujan & petir + 3 katak berteduh di bawah daun talas"
+                                    class="flex items-center gap-2 text-[11px] text-indigo-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
                                     <input type="checkbox" id="season-rain" value="rain" onchange="handleSeasonCheckbox(this)"
                                         class="accent-indigo-400 rounded cursor-pointer">
-                                    <span>🌧️ Hujan</span>
+                                    <span>⛈️ Hujan + 🐸</span>
                                 </label>
-                                <label class="flex items-center gap-2 text-[11px] text-pink-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
+                                <label title="Bunga bermekaran di bawah + Kupu-kupu di sudut kanan atas preview"
+                                    class="flex items-center gap-2 text-[11px] text-pink-200 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/70 cursor-pointer select-none transition">
                                     <input type="checkbox" id="season-spring" value="spring" onchange="handleSeasonCheckbox(this)"
                                         class="accent-pink-400 rounded cursor-pointer">
-                                    <span>🌸 Semi</span>
+                                    <span>🌸 Semi + 🦋</span>
                                 </label>
                             </div>
                         </div>
@@ -566,12 +570,15 @@
                     style="background-repeat: no-repeat; background-position: 50% 50%; background-size: cover; opacity: 0.85;">
                 </div>
 
-                <!-- Layer Canvas Animasi 4 Musim (Salju, Gugur, Hujan, Semi) -->
+                <!-- Layer Canvas Animasi 4 Musim (Di Belakang Frame HP/Tablet) -->
                 <canvas id="seasonCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-[5]"></canvas>
 
                 <div id="previewContainer" class="phone-frame">
                     <iframe id="previewFrame" class="w-full h-full border-none bg-white"></iframe>
                 </div>
+
+                <!-- Layer Foreground Khusus Kupu-Kupu yang Hinggap di Atas Sebelah Kanan Frame -->
+                <canvas id="seasonOverlayCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-[15]"></canvas>
             </div>
         </div>
 
@@ -952,27 +959,60 @@
 
     <script>
         // ==========================================
-        // ANIMASI 4 MUSIM (CANVAS ENGINE AUTO PREVIEW)
+        // ANIMASI 4 MUSIM + KARAKTER INTERAKTIF
         // ==========================================
         const seasonCanvas = document.getElementById('seasonCanvas');
         const seasonCtx = seasonCanvas.getContext('2d');
+        const seasonOverlayCanvas = document.getElementById('seasonOverlayCanvas');
+        const overlayCtx = seasonOverlayCanvas.getContext('2d');
+
         let seasonAnimFrame = null;
         let seasonParticles = [];
         let springFlowers = [];
+        let seasonTick = 0;
+
+        // State animasi karakter 4 musim
+        let polarBearsState = null;
+        let squirrelsState = null;
+        let rainLightningState = null;
+        let butterflyState = null;
+
+        function getDeviceBoundsInPreview() {
+            const area = document.getElementById('previewArea');
+            const frame = document.getElementById('previewContainer');
+            if (!area || !frame) return { left: 100, right: 475, top: 40, bottom: 740, width: 375, height: 700, isFull: false };
+            const areaRect = area.getBoundingClientRect();
+            const frameRect = frame.getBoundingClientRect();
+            const isFull = frame.classList.contains('full-frame');
+            return {
+                left: frameRect.left - areaRect.left,
+                right: frameRect.right - areaRect.left,
+                top: frameRect.top - areaRect.top,
+                bottom: frameRect.bottom - areaRect.top,
+                width: frameRect.width,
+                height: frameRect.height,
+                isFull
+            };
+        }
 
         function resizeSeasonCanvas() {
             const area = document.getElementById('previewArea');
-            if (!area || !seasonCanvas) return;
+            if (!area || !seasonCanvas || !seasonOverlayCanvas) return;
             seasonCanvas.width = area.clientWidth;
             seasonCanvas.height = area.clientHeight;
+            seasonOverlayCanvas.width = area.clientWidth;
+            seasonOverlayCanvas.height = area.clientHeight;
         }
         window.addEventListener('resize', () => {
             resizeSeasonCanvas();
             if (previewBgState.season === 'spring') initSpringFlowers();
         });
 
+        // ------------------------------------------
+        // 1. MUSIM SALJU: SALJU + BERUANG KUTUB & ANAKNYA HIDE & SEEK
+        // ------------------------------------------
         function initSnowParticles() {
-            seasonParticles = Array.from({ length: 85 }, () => ({
+            seasonParticles = Array.from({ length: 90 }, () => ({
                 x: Math.random() * seasonCanvas.width,
                 y: Math.random() * seasonCanvas.height,
                 r: Math.random() * 3.2 + 1.2,
@@ -980,34 +1020,577 @@
                 drift: Math.random() * Math.PI * 2,
                 alpha: Math.random() * 0.6 + 0.35
             }));
+
+            polarBearsState = {
+                phase: 'peek_left', // peek_left -> chase_right -> peek_right -> chase_left
+                timer: 0,
+                mamaOffset: 0,
+                cubOffset: 0,
+                runX: -120,
+                dir: 1
+            };
         }
 
+        function drawPolarBear(ctx, x, y, scale, dir, runCycle, isCub = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(dir * scale, scale);
+
+            const bob = Math.abs(Math.sin(runCycle)) * 4;
+            ctx.translate(0, -bob);
+
+            // Bayangan salju di bawah kaki
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
+            ctx.beginPath();
+            ctx.ellipse(0, 22 + bob, 32, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Kaki belakang & depan bergerak berlari
+            const legSwing = Math.sin(runCycle) * 10;
+            ctx.fillStyle = '#e2e8f0';
+            // Kaki belakang kiri
+            ctx.beginPath();
+            ctx.roundRect(-22 - legSwing * 0.6, 8, 10, 15, 5);
+            ctx.fill();
+            // Kaki depan kiri
+            ctx.beginPath();
+            ctx.roundRect(12 + legSwing * 0.6, 8, 10, 15, 5);
+            ctx.fill();
+
+            // Badan beruang kutub gemuk berbulu putih
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.ellipse(0, 2, 30, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ekor bulat kecil
+            ctx.beginPath();
+            ctx.arc(-30, -2, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Kaki sisi depan
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(-16 + legSwing, 9, 11, 15, 5);
+            ctx.roundRect(8 - legSwing, 9, 11, 15, 5);
+            ctx.fill();
+
+            // Kepala beruang kutub
+            ctx.beginPath();
+            ctx.ellipse(26, -8, 16, 14, -0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Moncong
+            ctx.fillStyle = '#f1f5f9';
+            ctx.beginPath();
+            ctx.ellipse(38, -5, 8, 6.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Telinga bulat
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(19, -20, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.arc(19, -20, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hidung hitam mengkilap
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(44, -6, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mata lucu
+            ctx.beginPath();
+            ctx.arc(31, -11, 2.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(31.8, -11.8, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Syal kecil untuk anak beruang agar menggemaskan
+            if (isCub) {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 4.5;
+                ctx.beginPath();
+                ctx.moveTo(15, -18);
+                ctx.quadraticCurveTo(18, -4, 14, 6);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function updateAndDrawPolarBears(ctx, W, H, dev) {
+            if (!polarBearsState) return;
+            const st = polarBearsState;
+            st.timer++;
+
+            // Hamparan bukit salju lembut di bawah layar
+            const snowGrad = ctx.createLinearGradient(0, H - 38, 0, H);
+            snowGrad.addColorStop(0, 'rgba(241, 245, 249, 0.05)');
+            snowGrad.addColorStop(1, 'rgba(241, 245, 249, 0.35)');
+            ctx.fillStyle = snowGrad;
+            ctx.fillRect(0, H - 38, W, 38);
+
+            const groundY = Math.min(H - 28, dev.bottom - 18);
+
+            if (st.phase === 'peek_left') {
+                // Anak beruang mengintip dari balik sisi kiri bingkai HP/Tablet, induk dari sisi kanan
+                const peekAmt = Math.sin(Math.min(1, st.timer / 45) * Math.PI * 0.5) * 34;
+                const cubY = dev.top + dev.height * 0.34;
+                const mamaY = dev.top + dev.height * 0.56;
+
+                drawPolarBear(ctx, dev.left - 18 - peekAmt, cubY, 0.65, -1, st.timer * 0.15, true);
+                drawPolarBear(ctx, dev.right + 22 + peekAmt * 0.9, mamaY, 0.95, 1, st.timer * 0.12, false);
+
+                if (st.timer > 130) {
+                    st.phase = 'chase_right';
+                    st.timer = 0;
+                    st.runX = Math.max(20, dev.left - 90);
+                }
+            } else if (st.phase === 'chase_right') {
+                // Berlari ceria ke arah kanan di belakang bingkai layar
+                st.runX += 2.6;
+                drawPolarBear(ctx, st.runX + 58, groundY + 4, 0.65, 1, st.timer * 0.32, true);
+                drawPolarBear(ctx, st.runX, groundY, 0.95, 1, st.timer * 0.28, false);
+
+                if (st.runX > Math.min(W - 20, dev.right + 80)) {
+                    st.phase = 'peek_right';
+                    st.timer = 0;
+                }
+            } else if (st.phase === 'peek_right') {
+                // Bergantian bersembunyi dan mengintip dari sisi kanan & kiri bingkai
+                const peekAmt = Math.sin(Math.min(1, st.timer / 45) * Math.PI * 0.5) * 34;
+                const cubY = dev.top + dev.height * 0.62;
+                const mamaY = dev.top + dev.height * 0.28;
+
+                drawPolarBear(ctx, dev.right + 18 + peekAmt, cubY, 0.65, 1, st.timer * 0.16, true);
+                drawPolarBear(ctx, dev.left - 22 - peekAmt * 0.9, mamaY, 0.95, -1, st.timer * 0.12, false);
+
+                if (st.timer > 130) {
+                    st.phase = 'chase_left';
+                    st.timer = 0;
+                    st.runX = Math.min(W - 20, dev.right + 90);
+                }
+            } else if (st.phase === 'chase_left') {
+                // Berlari kembali ke arah kiri di belakang bingkai layar
+                st.runX -= 2.6;
+                drawPolarBear(ctx, st.runX - 58, groundY + 4, 0.65, -1, st.timer * 0.32, true);
+                drawPolarBear(ctx, st.runX, groundY, 0.95, -1, st.timer * 0.28, false);
+
+                if (st.runX < Math.max(20, dev.left - 80)) {
+                    st.phase = 'peek_left';
+                    st.timer = 0;
+                }
+            }
+        }
+
+        // ------------------------------------------
+        // 2. MUSIM GUGUR: DAUN MAPLE (ACER) + 2 TUPAI HIDE & SEEK
+        // ------------------------------------------
         function initAutumnParticles() {
-            const colors = ['#f97316', '#ea580c', '#dc2626', '#eab308', '#d97706'];
-            seasonParticles = Array.from({ length: 42 }, () => ({
+            const colors = ['#dc2626', '#ea580c', '#f97316', '#eab308', '#b91c1c', '#d97706'];
+            seasonParticles = Array.from({ length: 46 }, () => ({
                 x: Math.random() * seasonCanvas.width,
                 y: Math.random() * seasonCanvas.height,
-                size: Math.random() * 7 + 5,
-                speedY: Math.random() * 1.5 + 0.8,
-                speedX: (Math.random() - 0.5) * 1.2,
+                size: Math.random() * 8 + 7,
+                speedY: Math.random() * 1.4 + 0.7,
+                speedX: (Math.random() - 0.5) * 1.1,
                 angle: Math.random() * Math.PI * 2,
-                spin: (Math.random() - 0.5) * 0.06,
+                spin: (Math.random() - 0.5) * 0.055,
                 sway: Math.random() * Math.PI * 2,
                 color: colors[Math.floor(Math.random() * colors.length)]
             }));
+
+            squirrelsState = {
+                phase: 'peek_edges', // peek_edges -> chase_right -> peek_swap -> chase_left
+                timer: 0,
+                runX: -100
+            };
         }
 
+        // Menggambar daun Maple (Acer) 5 lobus khas musim gugur
+        function drawMapleLeaf(ctx, x, y, size, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.strokeStyle = 'rgba(120, 53, 15, 0.45)';
+            ctx.lineWidth = 0.9;
+
+            const s = size * 0.14;
+            ctx.beginPath();
+            ctx.moveTo(0, 6 * s);
+            // Lobus bawah kanan
+            ctx.lineTo(4 * s, 5 * s);
+            ctx.lineTo(3 * s, 2.5 * s);
+            // Lobus samping kanan
+            ctx.lineTo(8.5 * s, 1.5 * s);
+            ctx.lineTo(6.5 * s, -0.5 * s);
+            ctx.lineTo(7.5 * s, -2.5 * s);
+            ctx.lineTo(3.5 * s, -2 * s);
+            // Lobus puncak tengah
+            ctx.lineTo(4.5 * s, -6.5 * s);
+            ctx.lineTo(2 * s, -5.5 * s);
+            ctx.lineTo(0, -9.5 * s);
+            ctx.lineTo(-2 * s, -5.5 * s);
+            ctx.lineTo(-4.5 * s, -6.5 * s);
+            // Lobus samping kiri
+            ctx.lineTo(-3.5 * s, -2 * s);
+            ctx.lineTo(-7.5 * s, -2.5 * s);
+            ctx.lineTo(-6.5 * s, -0.5 * s);
+            ctx.lineTo(-8.5 * s, 1.5 * s);
+            // Lobus bawah kiri
+            ctx.lineTo(-3 * s, 2.5 * s);
+            ctx.lineTo(-4 * s, 5 * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Tangkai daun maple
+            ctx.beginPath();
+            ctx.moveTo(0, 6 * s);
+            ctx.lineTo(0.8 * s, 10.5 * s);
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Menggambar tupai lucu dengan ekor mengembang besar
+        function drawSquirrel(ctx, x, y, scale, dir, runCycle, furColor = '#c2410c', tailColor = '#ea580c') {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(dir * scale, scale);
+
+            const hop = Math.abs(Math.sin(runCycle)) * 6;
+            ctx.translate(0, -hop);
+
+            // Ekor tupai lebat melengkung ke atas
+            const tailWag = Math.sin(runCycle * 1.2) * 0.14;
+            ctx.save();
+            ctx.translate(-10, 4);
+            ctx.rotate(tailWag);
+            ctx.fillStyle = tailColor;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-24, -4, -26, -34, -6, -34);
+            ctx.bezierCurveTo(6, -34, 4, -14, -4, -6);
+            ctx.closePath();
+            ctx.fill();
+            // Highlight ekor
+            ctx.fillStyle = '#fdba74';
+            ctx.beginPath();
+            ctx.ellipse(-11, -20, 5, 10, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Kaki belakang
+            const legSwing = Math.sin(runCycle) * 8;
+            ctx.fillStyle = furColor;
+            ctx.beginPath();
+            ctx.ellipse(-8 - legSwing * 0.5, 12, 7, 5, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Badan tupai
+            ctx.beginPath();
+            ctx.ellipse(0, 4, 13, 10, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Perut krem
+            ctx.fillStyle = '#fed7aa';
+            ctx.beginPath();
+            ctx.ellipse(4, 6, 7, 6, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Kaki depan memegang biji ek (acorn)
+            ctx.fillStyle = furColor;
+            ctx.beginPath();
+            ctx.ellipse(11 + legSwing * 0.4, 5, 5, 3.5, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Kepala tupai
+            ctx.beginPath();
+            ctx.ellipse(11, -8, 10, 9, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Telinga runcing lucu
+            ctx.beginPath();
+            ctx.ellipse(6, -17, 3.2, 5.5, -0.2, 0, Math.PI * 2);
+            ctx.ellipse(11, -17, 3.2, 5.5, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pipi chubby
+            ctx.fillStyle = '#fdba74';
+            ctx.beginPath();
+            ctx.arc(16, -6, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mata bulat berbinar & hidung
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(14, -10, 2.1, 0, Math.PI * 2);
+            ctx.arc(21, -8, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(14.7, -10.7, 0.7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function updateAndDrawSquirrels(ctx, W, H, dev) {
+            if (!squirrelsState) return;
+            const st = squirrelsState;
+            st.timer++;
+
+            // Tumpukan daun gugur hangat di bawah
+            const groundGrad = ctx.createLinearGradient(0, H - 30, 0, H);
+            groundGrad.addColorStop(0, 'rgba(217, 119, 6, 0)');
+            groundGrad.addColorStop(1, 'rgba(217, 119, 6, 0.25)');
+            ctx.fillStyle = groundGrad;
+            ctx.fillRect(0, H - 30, W, 30);
+
+            const groundY = Math.min(H - 22, dev.bottom - 14);
+
+            if (st.phase === 'peek_edges') {
+                // 2 tupai mengintip bergantian dari balik bingkai kiri dan kanan
+                const peek1 = Math.sin(Math.min(1, st.timer / 35) * Math.PI * 0.5) * 24;
+                const peek2 = Math.sin(Math.min(1, Math.max(0, st.timer - 20) / 35) * Math.PI * 0.5) * 24;
+
+                drawSquirrel(ctx, dev.left - 8 - peek1, dev.top + dev.height * 0.3, 0.9, -1, st.timer * 0.22, '#c2410c', '#ea580c');
+                drawSquirrel(ctx, dev.right + 8 + peek2, dev.top + dev.height * 0.65, 0.85, 1, st.timer * 0.25, '#b45309', '#f59e0b');
+
+                if (st.timer > 125) {
+                    st.phase = 'chase_right';
+                    st.timer = 0;
+                    st.runX = Math.max(15, dev.left - 80);
+                }
+            } else if (st.phase === 'chase_right') {
+                // 2 tupai berlarian melompat-lompat dari kiri ke kanan
+                st.runX += 3.2;
+                drawSquirrel(ctx, st.runX + 46, groundY, 0.85, 1, st.timer * 0.36, '#b45309', '#f59e0b');
+                drawSquirrel(ctx, st.runX, groundY, 0.9, 1, st.timer * 0.34, '#c2410c', '#ea580c');
+
+                if (st.runX > Math.min(W - 15, dev.right + 75)) {
+                    st.phase = 'peek_swap';
+                    st.timer = 0;
+                }
+            } else if (st.phase === 'peek_swap') {
+                // Mengintip dari sisi berlawanan
+                const peek1 = Math.sin(Math.min(1, st.timer / 35) * Math.PI * 0.5) * 24;
+                const peek2 = Math.sin(Math.min(1, Math.max(0, st.timer - 20) / 35) * Math.PI * 0.5) * 24;
+
+                drawSquirrel(ctx, dev.right + 8 + peek1, dev.top + dev.height * 0.28, 0.9, 1, st.timer * 0.22, '#c2410c', '#ea580c');
+                drawSquirrel(ctx, dev.left - 8 - peek2, dev.top + dev.height * 0.68, 0.85, -1, st.timer * 0.25, '#b45309', '#f59e0b');
+
+                if (st.timer > 125) {
+                    st.phase = 'chase_left';
+                    st.timer = 0;
+                    st.runX = Math.min(W - 15, dev.right + 80);
+                }
+            } else if (st.phase === 'chase_left') {
+                st.runX -= 3.2;
+                drawSquirrel(ctx, st.runX - 46, groundY, 0.85, -1, st.timer * 0.36, '#b45309', '#f59e0b');
+                drawSquirrel(ctx, st.runX, groundY, 0.9, -1, st.timer * 0.34, '#c2410c', '#ea580c');
+
+                if (st.runX < Math.max(15, dev.left - 75)) {
+                    st.phase = 'peek_edges';
+                    st.timer = 0;
+                }
+            }
+        }
+
+        // ------------------------------------------
+        // 3. MUSIM HUJAN: HUJAN + PETIR + 3 KATAK DI BAWAH DAUN TALAS BESAR
+        // ------------------------------------------
         function initRainParticles() {
-            seasonParticles = Array.from({ length: 130 }, () => ({
-                x: Math.random() * (seasonCanvas.width + 100),
+            seasonParticles = Array.from({ length: 140 }, () => ({
+                x: Math.random() * (seasonCanvas.width + 120),
                 y: Math.random() * seasonCanvas.height,
-                len: Math.random() * 16 + 10,
-                speedY: Math.random() * 9 + 11,
-                speedX: -2.2,
+                len: Math.random() * 17 + 11,
+                speedY: Math.random() * 9 + 12,
+                speedX: -2.4,
                 alpha: Math.random() * 0.45 + 0.25
             }));
+
+            rainLightningState = {
+                timer: 0,
+                nextStrike: 130,
+                flashAlpha: 0,
+                boltPoints: []
+            };
         }
 
+        function triggerLightningBolt(W, H) {
+            const startX = Math.random() * (W * 0.8) + W * 0.1;
+            const pts = [{ x: startX, y: 0 }];
+            let curX = startX;
+            let curY = 0;
+            const steps = 7;
+            for (let i = 0; i < steps; i++) {
+                curX += (Math.random() - 0.5) * 65;
+                curY += (H * 0.52) / steps;
+                pts.push({ x: curX, y: curY });
+            }
+            rainLightningState.boltPoints = pts;
+            rainLightningState.flashAlpha = 0.42;
+        }
+
+        function drawCuteFrog(ctx, x, y, scale, bodyColor, bellyColor, blinkPhase) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            const breathe = Math.sin(blinkPhase * 0.08) * 1.2;
+
+            // Kaki lipat samping katak
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.ellipse(-13, 8, 7, 4.5, -0.4, 0, Math.PI * 2);
+            ctx.ellipse(13, 8, 7, 4.5, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Badan katak gemuk duduk
+            ctx.beginPath();
+            ctx.ellipse(0, 3 - breathe * 0.5, 14, 11 + breathe * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Perut katak cerah
+            ctx.fillStyle = bellyColor;
+            ctx.beginPath();
+            ctx.ellipse(0, 5, 9.5, 7.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Dua tonjolan mata di atas kepala
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.arc(-7, -8, 5.5, 0, Math.PI * 2);
+            ctx.arc(7, -8, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bola mata putih & pupil (sesekali berkedip)
+            const isBlinking = Math.sin(blinkPhase * 0.045) > 0.96;
+            if (isBlinking) {
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(-10, -8);
+                ctx.lineTo(-4, -8);
+                ctx.moveTo(4, -8);
+                ctx.lineTo(10, -8);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-7, -8, 3.8, 0, Math.PI * 2);
+                ctx.arc(7, -8, 3.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(-6.5, -8, 2, 0, Math.PI * 2);
+                ctx.arc(7.5, -8, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Senyum katak & pipi merona
+            ctx.strokeStyle = '#064e3b';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.arc(0, -1, 6, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(251, 113, 133, 0.55)';
+            ctx.beginPath();
+            ctx.arc(-9, -2, 2.2, 0, Math.PI * 2);
+            ctx.arc(9, -2, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawTaroLeafShelter(ctx, W, H, dev, tick) {
+            // Posisi daun talas besar di sisi kiri-bawah atau kanan-bawah area preview
+            const shelterX = dev.left > 115 ? dev.left - 58 : Math.min(W - 85, dev.right + 58);
+            const groundY = H - 14;
+            const sway = Math.sin(tick * 0.035) * 3;
+
+            ctx.save();
+
+            // Genangan air hujan di bawah katak
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+            ctx.beginPath();
+            ctx.ellipse(shelterX, H - 6, 78, 9, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Batang daun talas besar melengkung sebagai payung
+            ctx.strokeStyle = '#15803d';
+            ctx.lineWidth = 5.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(shelterX - 38, groundY);
+            ctx.quadraticCurveTo(shelterX - 42, groundY - 58, shelterX + sway, groundY - 82);
+            ctx.stroke();
+
+            // Daun talas (Colocasia) lebar berbentuk hati/perisai di atas 3 katak
+            ctx.save();
+            ctx.translate(shelterX + sway, groundY - 82);
+            ctx.rotate(-0.08 + Math.sin(tick * 0.04) * 0.03);
+
+            const leafGrad = ctx.createLinearGradient(-75, -18, 75, 22);
+            leafGrad.addColorStop(0, '#22c55e');
+            leafGrad.addColorStop(0.5, '#16a34a');
+            leafGrad.addColorStop(1, '#15803d');
+            ctx.fillStyle = leafGrad;
+
+            ctx.beginPath();
+            ctx.moveTo(-76, 14);
+            ctx.bezierCurveTo(-68, -22, -16, -28, 0, -14);
+            ctx.bezierCurveTo(16, -28, 68, -22, 76, 14);
+            ctx.quadraticCurveTo(0, 4, -76, 14);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tulang daun talas
+            ctx.strokeStyle = '#86efac';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(0, -12);
+            ctx.lineTo(-55, 8);
+            ctx.moveTo(0, -12);
+            ctx.lineTo(55, 8);
+            ctx.moveTo(0, -12);
+            ctx.lineTo(0, 5);
+            ctx.stroke();
+
+            // Tetesan air jatuh dari ujung daun talas
+            const dripY = (tick * 2.5) % 45;
+            ctx.fillStyle = 'rgba(147, 197, 253, 0.75)';
+            ctx.beginPath();
+            ctx.arc(74, 15 + dripY, 2.3, 0, Math.PI * 2);
+            ctx.arc(-74, 15 + ((dripY + 20) % 45), 2.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            // 3 Katak berteduh rapat di bawah payung daun talas
+            drawCuteFrog(ctx, shelterX - 24, groundY - 8, 0.85, '#22c55e', '#bbf7d0', tick);
+            drawCuteFrog(ctx, shelterX + 2, groundY - 7, 0.95, '#16a34a', '#dcfce7', tick + 25);
+            drawCuteFrog(ctx, shelterX + 27, groundY - 8, 0.8, '#4ade80', '#fef08a', tick + 55);
+
+            ctx.restore();
+        }
+
+        // ------------------------------------------
+        // 4. MUSIM SEMI: BUNGA BERMEKARAN + KUPU-KUPU DI KANAN ATAS FRAME
+        // ------------------------------------------
         function initSpringFlowers() {
             const w = seasonCanvas.width || 600;
             const count = Math.max(12, Math.floor(w / 38));
@@ -1035,21 +1618,120 @@
                     petals: 5 + (i % 2)
                 };
             });
+
+            butterflyState = {
+                tick: 0
+            };
+        }
+
+        // Menggambar kupu-kupu cantik hinggap di sudut kanan atas bingkai Phone/Tablet
+        function drawPerchedButterfly(ctx, dev, tick) {
+            if (dev.isFull) return;
+
+            // Posisi menempel tepat di lengkungan atas sebelah kanan layar preview (phone & tablet)
+            const perchX = dev.right - 12;
+            const perchY = dev.top + 10;
+
+            ctx.save();
+            ctx.translate(perchX, perchY);
+            ctx.rotate(0.55); // Miring anggun mengikuti sudut bezel kanan atas
+
+            // Kepakan sayap halus saat hinggap (sesekali mengepak cepat lalu diam)
+            const cycle = tick * 0.09;
+            const flap = 0.52 + Math.abs(Math.sin(cycle)) * 0.48;
+
+            // Antena kupu-kupu
+            ctx.strokeStyle = '#1e1b4b';
+            ctx.lineWidth = 1.3;
+            ctx.beginPath();
+            ctx.moveTo(-2, -10);
+            ctx.quadraticCurveTo(-7, -20, -10, -21);
+            ctx.moveTo(2, -10);
+            ctx.quadraticCurveTo(7, -20, 10, -21);
+            ctx.stroke();
+
+            // Sayap Kiri
+            ctx.save();
+            ctx.scale(flap, 1);
+            // Sayap atas kiri
+            const wingGradL = ctx.createRadialGradient(-12, -8, 2, -14, -8, 22);
+            wingGradL.addColorStop(0, '#fde047');
+            wingGradL.addColorStop(0.55, '#f472b6');
+            wingGradL.addColorStop(1, '#9333ea');
+            ctx.fillStyle = wingGradL;
+            ctx.beginPath();
+            ctx.moveTo(0, -4);
+            ctx.bezierCurveTo(-18, -26, -32, -12, -22, 4);
+            ctx.bezierCurveTo(-15, 8, -4, 4, 0, 0);
+            ctx.fill();
+            // Sayap bawah kiri
+            ctx.fillStyle = '#ec4899';
+            ctx.beginPath();
+            ctx.moveTo(0, 1);
+            ctx.bezierCurveTo(-20, 4, -22, 20, -8, 18);
+            ctx.bezierCurveTo(-3, 16, -1, 8, 0, 4);
+            ctx.fill();
+            // Bintik putih cantik di sayap
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.beginPath();
+            ctx.arc(-18, -9, 2.2, 0, Math.PI * 2);
+            ctx.arc(-13, 11, 1.7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Sayap Kanan
+            ctx.save();
+            ctx.scale(flap, 1);
+            const wingGradR = ctx.createRadialGradient(12, -8, 2, 14, -8, 22);
+            wingGradR.addColorStop(0, '#fde047');
+            wingGradR.addColorStop(0.55, '#f472b6');
+            wingGradR.addColorStop(1, '#9333ea');
+            ctx.fillStyle = wingGradR;
+            ctx.beginPath();
+            ctx.moveTo(0, -4);
+            ctx.bezierCurveTo(18, -26, 32, -12, 22, 4);
+            ctx.bezierCurveTo(15, 8, 4, 4, 0, 0);
+            ctx.fill();
+            ctx.fillStyle = '#ec4899';
+            ctx.beginPath();
+            ctx.moveTo(0, 1);
+            ctx.bezierCurveTo(20, 4, 22, 20, 8, 18);
+            ctx.bezierCurveTo(3, 16, 1, 8, 0, 4);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.beginPath();
+            ctx.arc(18, -9, 2.2, 0, Math.PI * 2);
+            ctx.arc(13, 11, 1.7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Badan kupu-kupu
+            ctx.fillStyle = '#1e1b4b';
+            ctx.beginPath();
+            ctx.ellipse(0, 2, 2.6, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
         }
 
         function renderSeasonLoop() {
             const mode = previewBgState.season;
+            const W = seasonCanvas.width;
+            const H = seasonCanvas.height;
+
+            seasonCtx.clearRect(0, 0, W, H);
+            overlayCtx.clearRect(0, 0, W, H);
+
             if (!mode) {
-                seasonCtx.clearRect(0, 0, seasonCanvas.width, seasonCanvas.height);
                 seasonAnimFrame = null;
                 return;
             }
 
-            const W = seasonCanvas.width;
-            const H = seasonCanvas.height;
-            seasonCtx.clearRect(0, 0, W, H);
+            seasonTick++;
+            const dev = getDeviceBoundsInPreview();
 
             if (mode === 'snow') {
+                // Salju turun
                 seasonParticles.forEach(p => {
                     p.drift += 0.02;
                     p.y += p.speedY;
@@ -1063,35 +1745,68 @@
                     seasonCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
                     seasonCtx.fill();
                 });
+
+                // Beruang kutub & anaknya bermain hide & seek di belakang frame
+                updateAndDrawPolarBears(seasonCtx, W, H, dev);
+
             } else if (mode === 'autumn') {
+                // Daun Maple (Acer) berguguran
                 seasonParticles.forEach(p => {
                     p.sway += 0.03;
                     p.angle += p.spin;
                     p.y += p.speedY;
-                    p.x += Math.sin(p.sway) * 1.1 + p.speedX * 0.3;
-                    if (p.y > H + 12) { p.y = -12; p.x = Math.random() * W; }
-                    if (p.x > W + 12) p.x = -12;
-                    if (p.x < -12) p.x = W + 12;
+                    p.x += Math.sin(p.sway) * 1.15 + p.speedX * 0.3;
+                    if (p.y > H + 14) { p.y = -14; p.x = Math.random() * W; }
+                    if (p.x > W + 14) p.x = -14;
+                    if (p.x < -14) p.x = W + 14;
 
-                    seasonCtx.save();
-                    seasonCtx.translate(p.x, p.y);
-                    seasonCtx.rotate(p.angle);
-                    seasonCtx.fillStyle = p.color;
-                    seasonCtx.beginPath();
-                    seasonCtx.moveTo(0, -p.size);
-                    seasonCtx.quadraticCurveTo(p.size * 0.8, 0, 0, p.size);
-                    seasonCtx.quadraticCurveTo(-p.size * 0.8, 0, 0, -p.size);
-                    seasonCtx.fill();
-                    seasonCtx.restore();
+                    drawMapleLeaf(seasonCtx, p.x, p.y, p.size, p.angle, p.color);
                 });
+
+                // 2 Tupai berlarian & bermain hide and seek
+                updateAndDrawSquirrels(seasonCtx, W, H, dev);
+
             } else if (mode === 'rain') {
+                // Petir sesekali di langit
+                if (rainLightningState) {
+                    rainLightningState.timer++;
+                    if (rainLightningState.timer >= rainLightningState.nextStrike) {
+                        triggerLightningBolt(W, H);
+                        rainLightningState.timer = 0;
+                        rainLightningState.nextStrike = Math.floor(Math.random() * 140) + 120;
+                    }
+
+                    if (rainLightningState.flashAlpha > 0) {
+                        seasonCtx.fillStyle = `rgba(224, 242, 254, ${rainLightningState.flashAlpha})`;
+                        seasonCtx.fillRect(0, 0, W, H);
+
+                        // Gambar garis kilat petir bercahaya
+                        if (rainLightningState.boltPoints.length > 1) {
+                            seasonCtx.save();
+                            seasonCtx.strokeStyle = `rgba(255, 255, 255, ${Math.min(1, rainLightningState.flashAlpha * 2.5)})`;
+                            seasonCtx.shadowColor = '#38bdf8';
+                            seasonCtx.shadowBlur = 16;
+                            seasonCtx.lineWidth = 2.6;
+                            seasonCtx.beginPath();
+                            seasonCtx.moveTo(rainLightningState.boltPoints[0].x, rainLightningState.boltPoints[0].y);
+                            for (let i = 1; i < rainLightningState.boltPoints.length; i++) {
+                                seasonCtx.lineTo(rainLightningState.boltPoints[i].x, rainLightningState.boltPoints[i].y);
+                            }
+                            seasonCtx.stroke();
+                            seasonCtx.restore();
+                        }
+                        rainLightningState.flashAlpha = Math.max(0, rainLightningState.flashAlpha - 0.032);
+                    }
+                }
+
+                // Tetesan hujan turun
                 seasonCtx.lineWidth = 1.3;
                 seasonParticles.forEach(p => {
                     p.y += p.speedY;
                     p.x += p.speedX;
                     if (p.y > H + 20) {
                         p.y = -20;
-                        p.x = Math.random() * (W + 100);
+                        p.x = Math.random() * (W + 120);
                     }
                     seasonCtx.beginPath();
                     seasonCtx.moveTo(p.x, p.y);
@@ -1099,6 +1814,10 @@
                     seasonCtx.strokeStyle = `rgba(147, 197, 253, ${p.alpha})`;
                     seasonCtx.stroke();
                 });
+
+                // 3 Katak berteduh di bawah daun talas besar
+                drawTaroLeafShelter(seasonCtx, W, H, dev, seasonTick);
+
             } else if (mode === 'spring') {
                 // Hamparan rumput lembut di bawah preview
                 const grad = seasonCtx.createLinearGradient(0, H - 35, 0, H);
@@ -1124,7 +1843,6 @@
                     const topX = baseX + sway;
                     const topY = H - f.currentStemH;
 
-                    // Tangkai bunga
                     seasonCtx.beginPath();
                     seasonCtx.moveTo(baseX, baseY);
                     seasonCtx.quadraticCurveTo(baseX + sway * 0.4, H - f.currentStemH * 0.5, topX, topY);
@@ -1132,7 +1850,6 @@
                     seasonCtx.lineWidth = 2.4;
                     seasonCtx.stroke();
 
-                    // Daun kecil pada tangkai
                     if (f.currentStemH > 22) {
                         seasonCtx.fillStyle = '#4ade80';
                         seasonCtx.beginPath();
@@ -1140,7 +1857,6 @@
                         seasonCtx.fill();
                     }
 
-                    // Kelopak bunga bermekaran
                     if (f.currentBloom > 0.5) {
                         seasonCtx.save();
                         seasonCtx.translate(topX, topY);
@@ -1154,7 +1870,6 @@
                             seasonCtx.fill();
                             seasonCtx.restore();
                         }
-                        // Putik tengah bunga
                         seasonCtx.beginPath();
                         seasonCtx.arc(0, 0, f.currentBloom * 0.36, 0, Math.PI * 2);
                         seasonCtx.fillStyle = f.centerColor;
@@ -1162,6 +1877,9 @@
                         seasonCtx.restore();
                     }
                 });
+
+                // Kupu-kupu cantik hinggap di sudut kanan atas bingkai Phone/Tablet
+                drawPerchedButterfly(overlayCtx, dev, seasonTick);
             }
 
             seasonAnimFrame = requestAnimationFrame(renderSeasonLoop);
@@ -1173,9 +1891,11 @@
                 seasonAnimFrame = null;
             }
             resizeSeasonCanvas();
+            seasonTick = 0;
 
             if (!seasonKey) {
                 seasonCtx.clearRect(0, 0, seasonCanvas.width, seasonCanvas.height);
+                overlayCtx.clearRect(0, 0, seasonOverlayCanvas.width, seasonOverlayCanvas.height);
                 return;
             }
 
@@ -1202,8 +1922,8 @@
 
         const SEASON_LABELS = {
             snow: '❄️ Salju',
-            autumn: '🍂 Gugur',
-            rain: '🌧️ Hujan',
+            autumn: '🍁 Gugur',
+            rain: '⛈️ Hujan',
             spring: '🌸 Semi'
         };
 
