@@ -66,7 +66,7 @@
         }
         .full-frame { width: 100%; height: calc(100vh - 110px); border: none; border-radius: 8px; }
         
-        /* Floating Draggable Chat Phone Frame */
+        /* Floating Draggable Chat Phone Frame + Animasi Genie macOS */
         .floating-chat-phone {
             width: 335px;
             height: 550px;
@@ -79,7 +79,48 @@
             display: flex;
             flex-direction: column;
             user-select: none;
+            will-change: transform, opacity, filter;
+            transform-origin: bottom right;
+            transition: transform 0.44s cubic-bezier(0.22, 1.18, 0.36, 1), 
+                        opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                        filter 0.32s ease;
         }
+
+        /* State tertutup: tersedot kecil ke arah ikon WhatsApp */
+        .floating-chat-phone.mac-dock-closed {
+            opacity: 0;
+            transform: scale(0.06) skewX(-6deg) translateY(18px);
+            filter: blur(4px);
+            pointer-events: none;
+            transition: transform 0.34s cubic-bezier(0.4, 0, 0.85, 0.15), 
+                        opacity 0.26s ease-in,
+                        filter 0.26s ease-in;
+        }
+
+        /* State terbuka: meluncur mulus (suuuttt) ke ukuran penuh */
+        .floating-chat-phone.mac-dock-open {
+            opacity: 1;
+            transform: scale(1) skewX(0deg) translateY(0);
+            filter: blur(0px);
+            pointer-events: auto;
+        }
+
+        /* Animasi Pop-up Login Modal ala macOS Sheet */
+        .mac-modal-backdrop {
+            transition: opacity 0.28s ease, backdrop-filter 0.28s ease;
+        }
+        .mac-modal-backdrop.mac-modal-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .mac-modal-card {
+            transition: transform 0.38s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.25s ease;
+        }
+        .mac-modal-hidden .mac-modal-card {
+            transform: scale(0.78) translateY(24px);
+            opacity: 0;
+        }
+
         .floating-chat-phone input, .floating-chat-phone #chatMessages {
             user-select: text;
         }
@@ -195,7 +236,7 @@
             </div>
         </div>
 
-        <!-- Right Panel: Live Device Preview (Bersih tanpa tombol chat) -->
+        <!-- Right Panel: Live Device Preview -->
         <div class="w-1/2 flex flex-col bg-slate-900/30 relative">
             <div class="theme-toolbar bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs">
                 <span class="text-slate-400 font-medium"><i class="fa-solid fa-mobile-screen mr-1"></i> Live Device Preview</span>
@@ -221,7 +262,7 @@
     <!-- TOMBOL FLOATING MIRIP WHATSAPP DI POJOK KANAN BAWAH                   -->
     <!-- ===================================================================== -->
     <button id="waFloatingBtn" onclick="toggleChat()" title="Buka Live Class Chat"
-        class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer border-2 border-white/20">
+        class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/20">
         <i class="fa-brands fa-whatsapp text-3xl"></i>
         <!-- Badge Jumlah Online -->
         <span id="onlineBadgeNav" class="absolute -top-1 -left-1 bg-slate-900 text-emerald-400 border border-emerald-500/60 font-bold text-[10px] px-1.5 py-0.5 rounded-full shadow">0</span>
@@ -230,10 +271,10 @@
     </button>
 
     <!-- ===================================================================== -->
-    <!-- MODAL LOGIN MELAYANG SIMPLE (MUNCUL SAAT KLIK LOGO WA JIKA BELUM LOGIN) -->
+    <!-- MODAL LOGIN MELAYANG SIMPLE (ANIMASI MACOS SHEET)                     -->
     <!-- ===================================================================== -->
-    <div id="chatLoginModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <form onsubmit="submitChatLogin(event)" class="theme-panel theme-border w-full max-w-xs bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 relative animate-[fadeIn_0.2s_ease-out]">
+    <div id="chatLoginModal" class="mac-modal-backdrop mac-modal-hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <form onsubmit="submitChatLogin(event)" class="mac-modal-card theme-panel theme-border w-full max-w-xs bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 relative">
             <button type="button" onclick="closeLoginModal()" class="absolute top-3.5 right-3.5 text-slate-400 hover:text-white cursor-pointer">
                 <i class="fa-solid fa-xmark text-base"></i>
             </button>
@@ -265,11 +306,11 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- HAPE MELAYANG YANG BISA DI-DRAG KE MANA-MANA (SETELAH LOGIN)          -->
+    <!-- HAPE MELAYANG DRAGGABLE DENGAN ANIMASI GENIE / DOCK MACOS (SUUUTTT)   -->
     <!-- ===================================================================== -->
-    <div id="floatingPhoneChat" class="hidden fixed bottom-22 right-6 z-50 floating-chat-phone">
+    <div id="floatingPhoneChat" class="mac-dock-closed fixed bottom-22 right-6 z-50 floating-chat-phone">
         
-        <!-- Notch & Drag Handle Bar (Seret bagian ini untuk memindahkan HP) -->
+        <!-- Notch & Drag Handle Bar -->
         <div id="phoneDragHandle" title="Klik & seret untuk memindahkan posisi HP"
             class="theme-toolbar bg-slate-900 px-3.5 py-2 border-b border-slate-800 flex items-center justify-between cursor-move relative">
             <div class="flex items-center gap-1.5">
@@ -288,7 +329,7 @@
                     class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white text-[10px] px-1.5 py-0.5 rounded border border-rose-500/40 cursor-pointer transition flex items-center gap-1">
                     <i class="fa-solid fa-right-from-bracket"></i> Leave
                 </button>
-                <button onclick="minimizePhoneChat()" title="Sembunyikan ke tombol WA"
+                <button onclick="minimizePhoneChat()" title="Sembunyikan ke Dock WA"
                     class="text-slate-400 hover:text-white px-1 cursor-pointer">
                     <i class="fa-solid fa-minus text-xs"></i>
                 </button>
@@ -589,8 +630,26 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // DRAGGABLE FLOATING PHONE LOGIC (MOUSE & TOUCH)
+        // DRAGGABLE FLOATING PHONE LOGIC + MAC GENIE ORIGIN
         // ==========================================
+        function updateGenieOrigin() {
+            const phoneEl = document.getElementById('floatingPhoneChat');
+            const waBtn = document.getElementById('waFloatingBtn');
+            if (!phoneEl || !waBtn) return;
+
+            const waRect = waBtn.getBoundingClientRect();
+            const waCenterX = waRect.left + waRect.width / 2;
+            const waCenterY = waRect.top + waRect.height / 2;
+
+            // Hitung koordinat HP saat skala 1 (posisi asli tanpa transform)
+            const currentLeft = phoneEl.offsetLeft;
+            const currentTop = phoneEl.offsetTop;
+
+            const originX = waCenterX - currentLeft;
+            const originY = waCenterY - currentTop;
+            phoneEl.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+
         (function initDraggablePhone() {
             const phoneEl = document.getElementById('floatingPhoneChat');
             const handleEl = document.getElementById('phoneDragHandle');
@@ -599,8 +658,9 @@ print("Coding Senpai WSL Backend Active!")`;
 
             function onStart(clientX, clientY) {
                 isDragging = true;
+                // Matikan transisi sementara saat ditarik agar responsif 1:1 mengikuti kursor
+                phoneEl.style.transition = 'none';
                 const rect = phoneEl.getBoundingClientRect();
-                // Konversi dari posisi bottom/right ke top/left agar bebas diseret ke mana saja
                 phoneEl.style.bottom = 'auto';
                 phoneEl.style.right = 'auto';
                 phoneEl.style.left = rect.left + 'px';
@@ -617,7 +677,6 @@ print("Coding Senpai WSL Backend Active!")`;
                 let newLeft = initialLeft + (clientX - startX);
                 let newTop = initialTop + (clientY - startY);
 
-                // Batasi agar HP tidak keluar layar browser
                 const maxLeft = window.innerWidth - phoneEl.offsetWidth;
                 const maxTop = window.innerHeight - phoneEl.offsetHeight;
                 newLeft = Math.max(0, Math.min(newLeft, maxLeft));
@@ -628,10 +687,13 @@ print("Coding Senpai WSL Backend Active!")`;
             }
 
             function onEnd() {
+                if (!isDragging) return;
                 isDragging = false;
+                // Kembalikan transisi macOS Genie & perbarui titik asal arah ikon WA
+                phoneEl.style.transition = '';
+                updateGenieOrigin();
             }
 
-            // Mouse Events
             handleEl.addEventListener('mousedown', (e) => {
                 if (e.target.closest('button')) return;
                 onStart(e.clientX, e.clientY);
@@ -639,7 +701,6 @@ print("Coding Senpai WSL Backend Active!")`;
             window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
             window.addEventListener('mouseup', onEnd);
 
-            // Touch Events (untuk HP / Layar Sentuh)
             handleEl.addEventListener('touchstart', (e) => {
                 if (e.target.closest('button')) return;
                 const touch = e.touches[0];
@@ -837,36 +898,47 @@ print("Coding Senpai WSL Backend Active!")`;
             });
         }
 
+        function openPhoneWithGenie() {
+            const phoneChat = document.getElementById('floatingPhoneChat');
+            updateGenieOrigin();
+            isPhoneOpen = true;
+            phoneChat.classList.remove('mac-dock-closed');
+            phoneChat.classList.add('mac-dock-open');
+            document.getElementById('unreadDot').classList.add('hidden');
+            renderAllMessages();
+            broadcastPresence('online');
+            setTimeout(() => document.getElementById('chatInput').focus(), 200);
+        }
+
+        function closePhoneWithGenie() {
+            const phoneChat = document.getElementById('floatingPhoneChat');
+            updateGenieOrigin();
+            isPhoneOpen = false;
+            phoneChat.classList.remove('mac-dock-open');
+            phoneChat.classList.add('mac-dock-closed');
+        }
+
         // Klik tombol logo WhatsApp di pojok kanan bawah
         function toggleChat() {
             if (!myProfile) {
-                // Jika belum login, munculkan modal login melayang yang simpel
-                document.getElementById('chatLoginModal').classList.remove('hidden');
-                setTimeout(() => document.getElementById('loginNameInput').focus(), 100);
+                document.getElementById('chatLoginModal').classList.remove('mac-modal-hidden');
+                setTimeout(() => document.getElementById('loginNameInput').focus(), 120);
                 return;
             }
 
-            // Jika sudah login, tampilkan / sembunyikan Hape Chat melayang
-            isPhoneOpen = !isPhoneOpen;
-            const phoneChat = document.getElementById('floatingPhoneChat');
-            if (isPhoneOpen) {
-                phoneChat.classList.remove('hidden');
-                document.getElementById('unreadDot').classList.add('hidden');
-                renderAllMessages();
-                broadcastPresence('online');
-                setTimeout(() => document.getElementById('chatInput').focus(), 100);
+            if (!isPhoneOpen) {
+                openPhoneWithGenie();
             } else {
-                phoneChat.classList.add('hidden');
+                closePhoneWithGenie();
             }
         }
 
         function closeLoginModal() {
-            document.getElementById('chatLoginModal').classList.add('hidden');
+            document.getElementById('chatLoginModal').classList.add('mac-modal-hidden');
         }
 
         function minimizePhoneChat() {
-            isPhoneOpen = false;
-            document.getElementById('floatingPhoneChat').classList.add('hidden');
+            closePhoneWithGenie();
         }
 
         function submitChatLogin(e) {
@@ -884,16 +956,11 @@ print("Coding Senpai WSL Backend Active!")`;
             };
             localStorage.setItem('senpai_mqtt_profile', JSON.stringify(myProfile));
 
-            // Tutup modal login & langsung buka Hape Chat melayang
+            // Tutup modal login & luncurkan Hape Chat ala macOS Dock
             closeLoginModal();
-            isPhoneOpen = true;
-            document.getElementById('floatingPhoneChat').classList.remove('hidden');
-            document.getElementById('unreadDot').classList.add('hidden');
+            openPhoneWithGenie();
 
-            broadcastPresence('online');
             publishSystemNotice(`${nameVal} (${originVal}) bergabung.`);
-            renderAllMessages();
-            setTimeout(() => document.getElementById('chatInput').focus(), 100);
         }
 
         function leaveChat() {
@@ -912,10 +979,10 @@ print("Coding Senpai WSL Backend Active!")`;
             document.getElementById('loginOriginInput').value = '';
             recalculateRanksAndUI();
 
-            // Tutup HP melayang & kembalikan ke modal login
-            isPhoneOpen = false;
-            document.getElementById('floatingPhoneChat').classList.add('hidden');
-            document.getElementById('chatLoginModal').classList.remove('hidden');
+            closePhoneWithGenie();
+            setTimeout(() => {
+                document.getElementById('chatLoginModal').classList.remove('mac-modal-hidden');
+            }, 250);
         }
 
         function publishSystemNotice(text) {
@@ -939,7 +1006,6 @@ print("Coding Senpai WSL Backend Active!")`;
             }
         }
 
-        // Jika sebelumnya sudah login, langsung siarkan kehadiran di latar belakang
         if (myProfile) {
             broadcastPresence('online');
         }
