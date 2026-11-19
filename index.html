@@ -138,7 +138,7 @@
             backdrop-filter: blur(1px);
         }
 
-        /* Wadah stack 3 ikon yang mekar ke atas saat hover */
+        /* Wadah stack 4 ikon (Gemini, YouTube, Tema, Chat) yang mekar ke atas saat hover */
         .siri-dock-stack {
             max-height: 0;
             opacity: 0;
@@ -152,14 +152,20 @@
         }
         .siri-dock-wrapper:hover .siri-dock-stack,
         .siri-dock-wrapper.dock-pinned .siri-dock-stack {
-            max-height: 260px;
+            max-height: 320px;
             opacity: 1;
             transform: translateY(0) scale(1);
             pointer-events: auto;
             margin-bottom: 12px;
         }
+
+        /* Tombol Gemini Sparkle Gradient */
+        .gemini-dock-btn {
+            background: linear-gradient(135deg, #1d4ed8 0%, #7c3aed 55%, #ec4899 100%);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.55);
+        }
         
-        /* Floating Draggable Chat Phone Frame + Animasi Genie macOS */
+        /* Floating Draggable Windows + Animasi Genie macOS */
         .floating-chat-phone {
             width: 335px;
             height: 550px;
@@ -196,6 +202,44 @@
             pointer-events: auto;
         }
 
+        /* Floating Draggable Gemini Studio Modal */
+        .floating-gemini-window {
+            width: 410px;
+            max-width: 92vw;
+            height: 540px;
+            max-height: 85vh;
+            border: 2px solid #8b5cf6;
+            border-radius: 22px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 28px rgba(139, 92, 246, 0.45);
+            background-color: var(--bg-panel);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            will-change: transform, opacity, filter;
+            transform-origin: right center;
+            transition: transform 0.42s cubic-bezier(0.22, 1.18, 0.36, 1), 
+                        opacity 0.28s ease,
+                        filter 0.28s ease;
+        }
+        .floating-gemini-window.gem-closed {
+            opacity: 0;
+            transform: scale(0.08) translateX(16px);
+            filter: blur(4px);
+            pointer-events: none;
+        }
+        .floating-gemini-window.gem-open {
+            opacity: 1;
+            transform: scale(1) translateX(0);
+            filter: blur(0px);
+            pointer-events: auto;
+        }
+        .floating-gemini-window input,
+        .floating-gemini-window textarea,
+        .floating-gemini-window #geminiChatArea {
+            user-select: text;
+        }
+
         /* Floating Draggable YouTube Music Player + Animasi Genie */
         .floating-yt-player {
             width: 340px;
@@ -224,7 +268,7 @@
             pointer-events: auto;
         }
 
-        /* Floating Theme Picker Popover (Muncul di sebelah kiri ikon T-Shirt) */
+        /* Floating Theme Picker Popover */
         .theme-popover {
             transform-origin: right center;
             transition: transform 0.32s cubic-bezier(0.22, 1.18, 0.36, 1), opacity 0.22s ease;
@@ -260,10 +304,10 @@
             user-select: text;
         }
 
-        #chatMessages::-webkit-scrollbar { width: 5px; }
-        #chatMessages::-webkit-scrollbar-thumb { background: var(--phone-ring); border-radius: 3px; }
+        #chatMessages::-webkit-scrollbar, #geminiChatArea::-webkit-scrollbar { width: 5px; }
+        #chatMessages::-webkit-scrollbar-thumb, #geminiChatArea::-webkit-scrollbar-thumb { background: var(--phone-ring); border-radius: 3px; }
         
-        /* Animasi Navbar (Made with Love, Quotes Fade, Export Arrow) */
+        /* Animasi Navbar */
         @keyframes heartbeat {
             0%, 100% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.25); opacity: 0.7; }
@@ -308,7 +352,7 @@
         </div>
     </header>
 
-    <!-- Main Workspace (Relative untuk posisi Tombol Play Outline di Tengah Garis Pembatas) -->
+    <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden relative">
         
         <!-- TOMBOL JALANKAN (OUTLINE + SEGITIGA PLAY) DI TENGAH PEMBATAS PANEL -->
@@ -386,23 +430,38 @@
 
     <!-- ===================================================================== -->
     <!-- SIRI RAINBOW ORB DOCK DI KANAN-TENGAH LAYAR (POLOS TANPA NOTIFIKASI)  -->
-    <!-- Mudah dilihat di HP maupun Desktop; hover membuka 3 ikon ke atas.    -->
+    <!-- Urutan Atas ke Bawah saat Hover: Gemini -> YouTube -> T-Shirt -> Chat -->
     <!-- ===================================================================== -->
     <div id="siriDockWrapper" class="siri-dock-wrapper fixed top-1/2 -translate-y-1/2 right-4 z-40 flex flex-col items-center">
         
-        <!-- 3 Ikon yang Meluncur Mekar ke Atas Saat Hover -->
+        <!-- 4 Ikon yang Meluncur Mekar ke Atas Saat Hover -->
         <div class="siri-dock-stack flex flex-col items-center gap-3">
             
-            <!-- 1. Ikon YouTube Music (Atas) -->
+            <!-- 1. Ikon Gemini AI Coding Assistant (Paling Atas) -->
+            <button id="geminiFloatingBtn" onclick="toggleGeminiWindow()" title="Gemini AI Coding Assistant"
+                class="gemini-dock-btn w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/35 relative">
+                <!-- SVG Sparkle Logo Gemini Asli -->
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C12.4 7.2 16.8 11.6 22 12C16.8 12.4 12.4 16.8 12 22C11.6 16.8 7.2 12.4 2 12C7.2 11.6 11.6 7.2 12 2Z" fill="url(#gemGrad)" stroke="white" stroke-width="0.6"/>
+                    <defs>
+                        <linearGradient id="gemGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#93C5FD"/>
+                            <stop offset="0.5" stop-color="#FFFFFF"/>
+                            <stop offset="1" stop-color="#F9A8D4"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </button>
+
+            <!-- 2. Ikon YouTube Music -->
             <button id="ytFloatingBtn" onclick="toggleYoutubePlayer()" title="YouTube Music Player"
                 class="w-12 h-12 rounded-full bg-[#FF0000] hover:bg-[#e00000] text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/25 relative">
                 <i class="fa-brands fa-youtube text-xl"></i>
                 <span id="ytPlayingDot" class="hidden absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full animate-ping"></span>
             </button>
 
-            <!-- 2. Ikon T-Shirt Pemilih Tema (Tengah) + Popover Menu Tema di Sebelah Kiri -->
+            <!-- 3. Ikon T-Shirt Pemilih Tema + Popover Menu Tema di Sebelah Kiri -->
             <div class="relative flex items-center">
-                <!-- Popover Pilihan 5 Tema (Di sebelah kiri ikon: right-16) -->
                 <div id="themePopover" class="theme-popover popover-closed absolute right-16 top-1/2 -translate-y-1/2 w-52 theme-panel theme-border bg-slate-950/95 backdrop-blur-md border rounded-2xl p-2.5 shadow-2xl space-y-1 z-50">
                     <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b theme-border flex items-center justify-between">
                         <span>Pilih Tema IDE</span>
@@ -451,7 +510,7 @@
                 </button>
             </div>
 
-            <!-- 3. Ikon WhatsApp Live Class Chat (Bawah Stack) -->
+            <!-- 4. Ikon WhatsApp Live Class Chat (Bawah Stack) -->
             <button id="waFloatingBtn" onclick="toggleChat()" title="Buka Live Class Chat"
                 class="w-12 h-12 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-115 active:scale-90 cursor-pointer border-2 border-white/25 relative">
                 <i class="fa-brands fa-whatsapp text-2xl"></i>
@@ -462,17 +521,92 @@
         </div>
 
         <!-- BOLA SIRI PELANGI UTAMA (POLOS TANPA ANGKA/NOTIFIKASI) -->
-        <button id="siriLauncherOrb" onclick="toggleSiriPin()" title="Menu Pintas (YouTube, Tema, Chat)"
+        <button id="siriLauncherOrb" onclick="toggleSiriPin()" title="Menu Pintas (Gemini AI, YouTube, Tema, Chat)"
             class="siri-orb w-14 h-14 rounded-full cursor-pointer border-2 border-white/40 transition-transform duration-300 hover:scale-110 active:scale-95">
         </button>
 
     </div>
 
     <!-- ===================================================================== -->
+    <!-- JENDELA GEMINI AI CODING STUDIO MELAYANG (BISA DI-DRAG & AUTO INSERT) -->
+    <!-- ===================================================================== -->
+    <div id="floatingGeminiModal" class="gem-closed fixed top-1/2 -translate-y-1/2 right-22 z-50 floating-gemini-window">
+        
+        <!-- Header Drag Bar -->
+        <div id="geminiDragHandle" title="Klik & seret untuk memindahkan jendela Gemini"
+            class="bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-900 px-3.5 py-2.5 border-b border-purple-500/40 flex items-center justify-between cursor-move">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C12.4 7.2 16.8 11.6 22 12C16.8 12.4 12.4 16.8 12 22C11.6 16.8 7.2 12.4 2 12C7.2 11.6 11.6 7.2 12 2Z" fill="#C4B5FD"/>
+                </svg>
+                <span class="text-xs font-bold text-white tracking-wide">Gemini Coding Studio</span>
+                <span class="text-[9px] bg-purple-500/25 text-purple-200 border border-purple-400/40 px-1.5 py-0.2 rounded-full">Auto-HTML</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <button onclick="openGeminiPopupWindow()" title="Buka Akun Gemini Resmi di Jendela Sampingan"
+                    class="text-[10px] bg-white/10 hover:bg-white/20 text-sky-300 px-2 py-0.5 rounded border border-sky-400/30 cursor-pointer transition flex items-center gap-1">
+                    <i class="fa-solid fa-up-right-from-square text-[9px]"></i> Web Gemini
+                </button>
+                <button onclick="toggleGeminiWindow()" title="Tutup Jendela Gemini"
+                    class="text-slate-300 hover:text-white px-1 cursor-pointer">
+                    <i class="fa-solid fa-minus text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bar Aksi Cepat: Ambil dari Clipboard / Paste Kode dari Web Gemini -->
+        <div class="bg-slate-900/95 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between gap-1.5 text-[10px]">
+            <span class="text-slate-400 truncate">Sudah copy kode dari Web Gemini?</span>
+            <button onclick="importFromClipboardToEditor()"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2.5 py-1 rounded-lg cursor-pointer transition flex items-center gap-1 shrink-0 shadow">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Paste ke index.html
+            </button>
+        </div>
+
+        <!-- Area Percakapan & Kode Hasil Gemini -->
+        <div id="geminiChatArea" class="flex-1 p-3 overflow-y-auto space-y-3 text-xs bg-slate-950/90">
+            <!-- Pesan Sambutan & Ide Prompt Anak -->
+            <div class="bg-slate-900/90 border border-purple-500/30 rounded-2xl p-3 space-y-2">
+                <div class="text-purple-300 font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-sparkles"></i> Halo! Mau bikin aplikasi atau game apa hari ini?
+                </div>
+                <p class="text-[11px] text-slate-300 leading-relaxed">
+                    Ketik perintahmu di bawah, nanti kodenya langsung muncul dan bisa kamu masukkan otomatis ke <strong>index.html</strong> dengan 1 klik!
+                </p>
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <button onclick="quickPromptGemini('Buatkan storybook interaktif Si Kancil dan Buaya dengan animasi dan suara')"
+                        class="text-[10px] bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 border border-purple-500/40 px-2 py-1 rounded-lg cursor-pointer transition">
+                        📖 Storybook Kancil
+                    </button>
+                    <button onclick="quickPromptGemini('Buatkan game tangkap bintang jatuh dengan skor dan level')"
+                        class="text-[10px] bg-sky-600/20 hover:bg-sky-600/40 text-sky-200 border border-sky-500/40 px-2 py-1 rounded-lg cursor-pointer transition">
+                        🎮 Game Tangkap Bintang
+                    </button>
+                    <button onclick="quickPromptGemini('Buatkan kalkulator warna-warni yang lucu untuk anak SD')"
+                        class="text-[10px] bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-200 border border-emerald-500/40 px-2 py-1 rounded-lg cursor-pointer transition">
+                        🧮 Kalkulator Lucu
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Prompt Bawah -->
+        <div class="p-2.5 bg-slate-900 border-t border-slate-800 flex gap-1.5 items-center">
+            <input type="text" id="geminiPromptInput" placeholder="Minta Gemini buatkan kode HTML..." autocomplete="off"
+                onkeydown="if(event.key==='Enter'){event.preventDefault(); askGeminiCoding();}"
+                class="flex-1 bg-slate-800 text-white text-xs rounded-full px-3.5 py-2 border border-purple-500/40 focus:border-purple-400 outline-none">
+            <button id="geminiSendBtn" type="button" onclick="askGeminiCoding()"
+                class="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white flex items-center justify-center cursor-pointer transition shrink-0 shadow">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
     <!-- PEMUTAR MUSIK YOUTUBE MELAYANG (BISA DI-DRAG & MINIMIZE TETAP NYALA)  -->
     <!-- ===================================================================== -->
     <div id="floatingYoutubeModal" class="yt-closed fixed top-1/2 -translate-y-1/2 right-22 z-40 floating-yt-player">
-        <!-- Header Drag Bar -->
         <div id="ytDragHandle" title="Seret untuk memindahkan pemutar musik"
             class="theme-toolbar bg-slate-900 px-3 py-2 border-b theme-border flex items-center justify-between cursor-move">
             <div class="flex items-center gap-1.5 text-xs font-bold text-white">
@@ -491,7 +625,6 @@
             </div>
         </div>
 
-        <!-- Input Link YouTube & Pilihan Preset -->
         <div class="p-2.5 space-y-2 theme-panel">
             <div class="flex gap-1.5">
                 <input type="text" id="ytUrlInput" placeholder="Tempel link YouTube di sini..."
@@ -503,7 +636,6 @@
                 </button>
             </div>
 
-            <!-- Preset Musik Fokus Ngoding -->
             <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px]">
                 <button onclick="playYoutubePreset('jfKfPfyJRdk')" class="theme-surface hover:opacity-80 text-slate-300 px-2 py-1 rounded border theme-border whitespace-nowrap cursor-pointer">
                     🎧 Lofi Girl Radio
@@ -516,7 +648,6 @@
                 </button>
             </div>
 
-            <!-- Embed Frame Video -->
             <div class="w-full aspect-video bg-black rounded-xl overflow-hidden border theme-border relative">
                 <iframe id="ytIframe" class="w-full h-full border-none"
                     src=""
@@ -568,7 +699,6 @@
     <!-- ===================================================================== -->
     <div id="floatingPhoneChat" class="mac-dock-closed fixed bottom-6 right-22 z-50 floating-chat-phone">
         
-        <!-- Notch & Drag Handle Bar -->
         <div id="phoneDragHandle" title="Klik & seret untuk memindahkan posisi HP"
             class="theme-toolbar bg-slate-900 px-3.5 py-2 border-b border-slate-800 flex items-center justify-between cursor-move relative">
             <div class="flex items-center gap-1.5">
@@ -579,7 +709,6 @@
                 </span>
             </div>
 
-            <!-- Speaker Notch -->
             <div class="w-14 h-2.5 bg-black/70 rounded-full border border-slate-700/60 hidden sm:block"></div>
 
             <div class="flex items-center gap-1.5">
@@ -594,7 +723,6 @@
             </div>
         </div>
 
-        <!-- Sub-header Identitas User & Daftar Online -->
         <div class="theme-panel bg-slate-950/90 px-3 py-1.5 border-b theme-border space-y-1">
             <div class="flex items-center justify-between text-[10px]">
                 <span id="myUserBadge" class="text-indigo-300 font-mono truncate max-w-[200px]">-</span>
@@ -606,14 +734,12 @@
             </div>
         </div>
 
-        <!-- Area Pesan Chat -->
         <div id="chatMessages" class="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs bg-slate-950/60">
             <div id="emptyChatNotice" class="text-center text-[11px] text-slate-500 my-6">
                 Ruang obrolan kelas aktif.<br>Lampiran file otomatis terhapus dalam 5 menit.
             </div>
         </div>
 
-        <!-- Bar Pratinjau Lampiran Temporary (Jika ada file dipilih) -->
         <div id="pendingAttachmentBar" class="hidden theme-panel bg-slate-950 px-3 py-1.5 border-t theme-border flex items-center justify-between text-[11px]">
             <div class="flex items-center gap-1.5 truncate text-amber-300">
                 <i class="fa-solid fa-hourglass-half animate-pulse"></i>
@@ -625,7 +751,6 @@
             </button>
         </div>
 
-        <!-- Input Chat Bawah + Tombol Attach File Temporary -->
         <div class="theme-toolbar p-2.5 bg-slate-900 border-t border-slate-800 flex gap-1.5 items-center">
             <input type="file" id="chatFileInput" class="hidden" onchange="handleChatFileSelect(event)">
             <button type="button" onclick="document.getElementById('chatFileInput').click()"
@@ -642,13 +767,12 @@
             </button>
         </div>
 
-        <!-- Home Indicator Bar Bawah HP -->
         <div class="theme-toolbar bg-slate-900 py-1.5 flex justify-center">
             <div class="w-24 h-1 bg-slate-600 rounded-full"></div>
         </div>
     </div>
 
-    <!-- Modal Preview Gambar Full (Selama Belum Expired 5 Menit) -->
+    <!-- Modal Preview Gambar Full -->
     <div id="imageLightboxModal" onclick="closeImageLightbox()" class="hidden fixed inset-0 z-[60] bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-4 cursor-zoom-out">
         <img id="lightboxImg" src="" alt="Preview" class="max-w-[90vw] max-h-[80vh] rounded-xl shadow-2xl border border-slate-700">
         <p id="lightboxCaption" class="text-xs text-slate-300 mt-3 bg-slate-900/90 px-3 py-1 rounded-full border border-slate-700"></p>
@@ -661,6 +785,201 @@
         function toggleSiriPin() {
             const wrapper = document.getElementById('siriDockWrapper');
             wrapper.classList.toggle('dock-pinned');
+        }
+
+        // ==========================================
+        // GEMINI AI CODING STUDIO & AUTO-INJECT HTML
+        // ==========================================
+        let isGeminiOpen = false;
+        const generatedCodeStore = {};
+
+        function updateGeminiGenieOrigin() {
+            const modal = document.getElementById('floatingGeminiModal');
+            const siriOrb = document.getElementById('siriLauncherOrb');
+            if (!modal || !siriOrb) return;
+
+            const btnRect = siriOrb.getBoundingClientRect();
+            const btnCenterX = btnRect.left + btnRect.width / 2;
+            const btnCenterY = btnRect.top + btnRect.height / 2;
+
+            const originX = btnCenterX - modal.offsetLeft;
+            const originY = btnCenterY - modal.offsetTop;
+            modal.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+
+        function toggleGeminiWindow() {
+            const modal = document.getElementById('floatingGeminiModal');
+            updateGeminiGenieOrigin();
+            isGeminiOpen = !isGeminiOpen;
+            if (isGeminiOpen) {
+                modal.classList.remove('gem-closed');
+                modal.classList.add('gem-open');
+                setTimeout(() => document.getElementById('geminiPromptInput').focus(), 200);
+            } else {
+                modal.classList.remove('gem-open');
+                modal.classList.add('gem-closed');
+            }
+        }
+
+        function openGeminiPopupWindow() {
+            const w = Math.min(480, Math.floor(window.innerWidth * 0.45));
+            const h = Math.min(720, window.innerHeight - 60);
+            const left = window.screenX + window.innerWidth - w - 20;
+            const top = window.screenY + 40;
+            window.open(
+                'https://gemini.google.com/app',
+                'GeminiCodingPopup',
+                `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+            );
+            logTerminal(`[INFO] Jendela sampingan Web Gemini dibuka. Klik "Paste ke index.html" setelah copy kode.`);
+        }
+
+        function extractCleanHTML(rawText) {
+            if (!rawText) return '';
+            const fencedMatch = rawText.match(/```(?:html|xml)?\s*([\s\S]*?)```/i);
+            if (fencedMatch && fencedMatch[1]) {
+                return fencedMatch[1].trim();
+            }
+            const docStart = rawText.search(/<!DOCTYPE html>|<html/i);
+            const docEnd = rawText.search(/<\/html>/i);
+            if (docStart !== -1 && docEnd !== -1 && docEnd > docStart) {
+                return rawText.slice(docStart, docEnd + 7).trim();
+            }
+            return rawText.trim();
+        }
+
+        function injectCodeToHtmlEditor(codeStr) {
+            const cleanCode = extractCleanHTML(codeStr);
+            if (!cleanCode) return;
+
+            if (currentTab !== 'html') {
+                switchTab('html');
+            }
+            codeStore.html = cleanCode;
+            editor.setValue(cleanCode, -1);
+            runCode();
+            logTerminal(`[SUCCESS] Kode dari Gemini otomatis dimasukkan ke index.html & dijalankan!`);
+        }
+
+        async function importFromClipboardToEditor() {
+            try {
+                const clipText = await navigator.clipboard.readText();
+                if (!clipText || !clipText.trim()) {
+                    alert('Clipboard masih kosong. Salin (Copy) kode dari Gemini terlebih dahulu.');
+                    return;
+                }
+                injectCodeToHtmlEditor(clipText);
+            } catch (err) {
+                alert('Browser meminta izin clipboard. Silakan klik tombol Paste di toolbar editor atau tekan Ctrl+V di editor.');
+            }
+        }
+
+        function quickPromptGemini(text) {
+            document.getElementById('geminiPromptInput').value = text;
+            askGeminiCoding();
+        }
+
+        async function askGeminiCoding() {
+            const input = document.getElementById('geminiPromptInput');
+            const sendBtn = document.getElementById('geminiSendBtn');
+            const chatArea = document.getElementById('geminiChatArea');
+            const userPrompt = input.value.trim();
+            if (!userPrompt) return;
+
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+
+            // Tampilkan bubble pertanyaan anak
+            const userBubble = document.createElement('div');
+            userBubble.className = 'flex justify-end';
+            userBubble.innerHTML = `
+                <div class="bg-indigo-600 text-white px-3 py-2 rounded-2xl rounded-br-none max-w-[85%] shadow text-xs">
+                    ${escapeHTML(userPrompt)}
+                </div>
+            `;
+            chatArea.appendChild(userBubble);
+
+            // Indikator loading
+            const loadingId = 'gem_load_' + Date.now();
+            const loadingBubble = document.createElement('div');
+            loadingBubble.id = loadingId;
+            loadingBubble.className = 'flex items-center gap-2 text-purple-300 text-[11px] bg-slate-900/80 border border-purple-500/30 px-3 py-2 rounded-2xl w-fit';
+            loadingBubble.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gemini sedang menulis kode HTML...`;
+            chatArea.appendChild(loadingBubble);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            try {
+                const systemInstruction = "Kamu adalah asisten coding ramah untuk siswa SD/SMP. Buatlah satu file HTML lengkap mandiri (termasuk CSS di <style> dan JS di <script> dalam satu file) sesuai permintaan user. Pastikan tampilan visual menarik, responsif di layar HP (375px), interaktif, dan berfungsi sempurna tanpa file eksternal lokal. Kembalikan HANYA kode HTML valid di dalam blok ```html ... ``` tanpa penjelasan panjang.";
+
+                const response = await fetch('https://text.pollinations.ai/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: systemInstruction },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        model: 'openai',
+                        seed: Math.floor(Math.random() * 10000)
+                    })
+                });
+
+                if (!response.ok) throw new Error('Koneksi AI sibuk');
+                const rawReply = await response.text();
+                const htmlResult = extractCleanHTML(rawReply);
+
+                const codeKey = 'code_' + Date.now();
+                generatedCodeStore[codeKey] = htmlResult;
+
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+
+                const aiCard = document.createElement('div');
+                aiCard.className = 'bg-slate-900 border border-purple-500/40 rounded-2xl p-2.5 space-y-2 shadow-lg';
+                aiCard.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] text-purple-300 font-semibold">
+                        <span><i class="fa-solid fa-code mr-1"></i> Kode HTML Siap (${htmlResult.length} karakter)</span>
+                        <span class="text-emerald-400">✓ Valid</span>
+                    </div>
+                    <pre class="bg-black/80 text-emerald-300 font-mono text-[10px] p-2 rounded-xl max-h-32 overflow-auto border border-slate-800 whitespace-pre-wrap">${escapeHTML(htmlResult.slice(0, 450))}${htmlResult.length > 450 ? '\n... (kode lengkap siap dimasukkan)' : ''}</pre>
+                    <div class="flex gap-1.5 pt-0.5">
+                        <button onclick="applyGeneratedCode('${codeKey}', this)"
+                            class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-slate-950 font-bold text-[11px] py-2 px-3 rounded-xl cursor-pointer transition flex items-center justify-center gap-1.5 shadow">
+                            <i class="fa-solid fa-file-import"></i> Copy & Masukkan ke HTML
+                        </button>
+                    </div>
+                `;
+                chatArea.appendChild(aiCard);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            } catch (err) {
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+
+                const errCard = document.createElement('div');
+                errCard.className = 'bg-rose-950/60 border border-rose-500/40 text-rose-200 rounded-xl p-2.5 text-[11px] space-y-1.5';
+                errCard.innerHTML = `
+                    <div>Gagal memuat langsung dari server AI. Kamu bisa klik tombol <strong>Web Gemini</strong> di pojok kanan atas jendela ini, lalu klik <strong>Paste ke index.html</strong>!</div>
+                `;
+                chatArea.appendChild(errCard);
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function applyGeneratedCode(codeKey, btnEl) {
+            const code = generatedCodeStore[codeKey];
+            if (!code) return;
+            navigator.clipboard.writeText(code).catch(() => {});
+            injectCodeToHtmlEditor(code);
+
+            if (btnEl) {
+                const origHTML = btnEl.innerHTML;
+                btnEl.innerHTML = `<i class="fa-solid fa-check"></i> Sudah Masuk ke index.html!`;
+                setTimeout(() => { btnEl.innerHTML = origHTML; }, 2200);
+            }
         }
 
         // ==========================================
@@ -1002,9 +1321,7 @@ print("Coding Senpai WSL Backend Active!")`;
         async function pasteCode() {
             try {
                 const text = await navigator.clipboard.readText();
-                editor.setValue(text, -1);
-                logTerminal(`[INFO] Code pasted from clipboard.`);
-                runCode();
+                injectCodeToHtmlEditor(text);
             } catch (err) {
                 logTerminal(`[ERROR] Gagal paste clipboard: Izinkan akses clipboard di browser.`);
             }
@@ -1039,7 +1356,7 @@ print("Coding Senpai WSL Backend Active!")`;
         }
 
         // ==========================================
-        // UNIVERSAL DRAGGABLE HELPER (CHAT PHONE & YOUTUBE PLAYER)
+        // UNIVERSAL DRAGGABLE HELPER
         // ==========================================
         function makeElementDraggable(elementId, handleId, onDragEndCallback = null) {
             const el = document.getElementById(elementId);
@@ -1122,6 +1439,7 @@ print("Coding Senpai WSL Backend Active!")`;
 
         makeElementDraggable('floatingPhoneChat', 'phoneDragHandle', updateGenieOrigin);
         makeElementDraggable('floatingYoutubeModal', 'ytDragHandle', updateYtGenieOrigin);
+        makeElementDraggable('floatingGeminiModal', 'geminiDragHandle', updateGeminiGenieOrigin);
 
         // ==========================================
         // TEMPORARY ATTACHMENT (AUTO-EXPIRE 5 MENIT)
